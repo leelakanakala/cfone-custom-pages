@@ -3,7 +3,7 @@
 wrangler.jsonc
 
 # Auto-generated files (built from src/)
-worker.js
+main.js
 
 # Node
 node_modules/

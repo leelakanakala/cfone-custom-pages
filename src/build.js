@@ -24,10 +24,10 @@ let workerContent = workerTemplate
   .replace('__GATEWAY_PAGE_HTML__', escapeForTemplate(gatewayPageHTML))
   .replace('__COACHING_PAGE_HTML__', escapeForTemplate(coachingPageHTML));
 
-// Write to root worker.js
-fs.writeFileSync(path.join(__dirname, '../worker.js'), workerContent);
+// Write to root main.js
+fs.writeFileSync(path.join(__dirname, '../main.js'), workerContent);
 
 console.log('✅ Worker built successfully!');
 console.log('📦 Pages bundled:');
-console.log('   - Gateway block page (/gateway/)');
+console.log('   - Gateway block page (/cf-gateway/)');
 console.log('   - Coaching page (/coaching/)');

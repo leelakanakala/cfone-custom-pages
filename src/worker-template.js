@@ -7,12 +7,12 @@ export default {
     const path = url.pathname;
 
     // Route to appropriate page handler
-    if (path === '/gateway/' || path === '/gateway') {
+    if (path === '/cf-gateway/' || path === '/cf-gateway') {
       return serveGatewayPage(url);
     } else if (path === '/coaching/' || path === '/coaching') {
       return serveCoachingPage(url);
     } else if (path === '/') {
-      return Response.redirect(url.origin + '/gateway/', 302);
+      return Response.redirect(url.origin + '/cf-gateway/', 302);
     } else {
       return new Response('Page not found', { status: 404 });
     }
