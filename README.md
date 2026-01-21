@@ -11,6 +11,11 @@ This project implements a Cloudflare Worker that serves multiple custom pages:
 
 The architecture is designed to be scalable and maintainable, with shared components and a build system that bundles multiple pages into a single worker.
 
+## Screenshot
+
+![Gateway Block Page](docs/images/block-page-screenshot.png)
+*Gateway block page showing policy context with light theme, collapsible details, and technical information footer*
+
 ## Features
 
 ### 🎨 Modern UI/UX

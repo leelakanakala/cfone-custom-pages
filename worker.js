@@ -446,7 +446,7 @@ function serveGatewayPage(url) {
         .tech-item .copy-button {
             background: var(--bg-tertiary);
             color: var(--text-secondary);
-            border: 1px solid var(--border-primary);
+            border: none;
             padding: 6px 12px;
             border-radius: 6px;
             font-size: 11px;
@@ -459,13 +459,11 @@ function serveGatewayPage(url) {
 
         .tech-item .copy-button:hover {
             background: var(--bg-hover);
-            border-color: var(--border-primary);
             color: var(--text-primary);
         }
 
         .tech-item .copy-button.copied {
             background: rgba(16, 185, 129, 0.1);
-            border-color: rgba(16, 185, 129, 0.3);
             color: var(--accent-success);
         }
 
