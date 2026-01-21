@@ -1,10 +1,15 @@
 # Cloudflare Custom Pages
 
-A custom block page for Cloudflare Secure Web Gateway (SWG) that provides users with clear, informative feedback when access to a website is blocked by security policies.
+A scalable collection of custom pages for Cloudflare Secure Web Gateway (SWG) and user coaching, providing clear, informative feedback and security awareness training.
 
 ## Overview
 
-This project implements a Cloudflare Worker that serves a custom block page at `https://access.0security.net/gateway/`. The page displays policy context information from Cloudflare SWG in a user-friendly interface with modern design and accessibility features.
+This project implements a Cloudflare Worker that serves multiple custom pages:
+- **Block Page** (`/gateway/`) - Displays policy context when access is blocked by SWG
+- **Coaching Page** (`/coaching/`) - User security awareness and training (coming soon)
+- **Future pages** - Easily add more custom pages as needed
+
+The architecture is designed to be scalable and maintainable, with shared components and a build system that bundles multiple pages into a single worker.
 
 ## Features
 
@@ -29,46 +34,92 @@ This project implements a Cloudflare Worker that serves a custom block page at `
 ## Project Structure
 
 ```
-.
-├── worker.js           # Cloudflare Worker script (main deployment file)
-├── block.html          # Standalone HTML for testing/preview
-├── wrangler.toml       # Cloudflare Worker configuration
-├── package.json        # Node.js dependencies
-└── README.md          # This file
+cf-custom-pages/
+├── src/
+│   ├── pages/
+│   │   ├── block/
+│   │   │   └── index.html          # Gateway block page
+│   │   └── coaching/
+│   │       └── index.html          # User coaching page
+│   ├── shared/
+│   │   ├── styles/
+│   │   │   └── theme.css           # Shared theme variables
+│   │   └── scripts/
+│   │       └── theme-toggle.js     # Shared theme toggle logic
+│   ├── worker-template.js          # Worker template with placeholders
+│   └── build.js                    # Build script to bundle pages
+├── worker.js                       # Generated worker (auto-built, git ignored)
+├── wrangler.toml                   # Cloudflare Worker config (git ignored)
+├── wrangler.toml.example           # Configuration template
+├── package.json                    # Dependencies and build scripts
+├── .gitignore
+└── README.md
 ```
+
+### Directory Explanation
+
+- **`src/pages/`** - Each subdirectory contains a complete HTML page
+- **`src/shared/`** - Reusable CSS and JavaScript across all pages
+- **`src/build.js`** - Bundles HTML pages into the worker
+- **`worker.js`** - Auto-generated, deployed to Cloudflare (not in git)
 
 ## Deployment
 
 ### Prerequisites
+- Node.js 16+ installed
 - Cloudflare account
-- Wrangler CLI installed (`npm install -g wrangler`)
+- Wrangler CLI (`npm install -g wrangler` or use local version)
 - API token with Workers permissions
 
 ### Steps
 
-1. **Configure Account**
+1. **Install Dependencies**
+   ```bash
+   npm install
+   ```
+
+2. **Configure Account**
    ```bash
    export CLOUDFLARE_API_TOKEN="your-api-token"
    ```
 
-2. **Update Configuration**
-   Edit `wrangler.toml` with your account ID and route:
+3. **Create Configuration**
+   Copy `wrangler.toml.example` to `wrangler.toml` and update:
+   ```bash
+   cp wrangler.toml.example wrangler.toml
+   ```
+   
+   Edit `wrangler.toml` with your account ID:
    ```toml
    name = "cfone-custom-pages"
    main = "worker.js"
    compatibility_date = "2024-01-01"
    
-   account_id = "your-account-id"
+   account_id = "your-account-id-here"
    
    [[routes]]
    pattern = "access.0security.net/*"
    zone_name = "0security.net"
    ```
 
-3. **Deploy**
+4. **Build and Deploy**
    ```bash
-   wrangler deploy
+   npm run deploy
    ```
+   
+   Or build and deploy separately:
+   ```bash
+   npm run build      # Bundles pages into worker.js
+   wrangler deploy    # Deploys to Cloudflare
+   ```
+
+### Development
+
+**Local Testing**
+```bash
+npm run dev
+```
+This builds the worker and starts a local development server.
 
 ## Configuration in Cloudflare SWG
 
@@ -91,6 +142,49 @@ The block page expects these query parameters from Cloudflare SWG:
 | `cf_device_id` | User's device identifier |
 | `cf_source_ip` | User's source IP address |
 | `cf_account_id` | Cloudflare account ID |
+
+## Adding New Pages
+
+The architecture makes it easy to add new custom pages:
+
+1. **Create Page Directory**
+   ```bash
+   mkdir -p src/pages/your-page-name
+   ```
+
+2. **Add HTML File**
+   Create `src/pages/your-page-name/index.html` with your page content
+
+3. **Update Worker Template**
+   Edit `src/worker-template.js`:
+   - Add route in the `fetch()` handler
+   - Add a new serve function
+   - Add placeholder in template
+
+4. **Update Build Script**
+   Edit `src/build.js` to read and bundle your new page
+
+5. **Build and Test**
+   ```bash
+   npm run build
+   npm run dev
+   ```
+
+### Example: Adding a "Terms" Page
+
+```javascript
+// In src/worker-template.js
+if (path === '/terms/' || path === '/terms') {
+  return serveTermsPage(url);
+}
+
+function serveTermsPage(url) {
+  const termsPageHTML = `__TERMS_PAGE_HTML__`;
+  return new Response(termsPageHTML, {
+    headers: { 'content-type': 'text/html;charset=UTF-8' }
+  });
+}
+```
 
 ## Customization
 
