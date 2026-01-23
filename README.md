@@ -11,6 +11,9 @@ Custom pages for Cloudflare Secure Web Gateway (SWG) and Cloudflare Access, prov
 - Responsive design
 - Copy technical details for IT support
 
+![Gateway Block Page](src/img/gw-block-page.png)
+*Gateway block page showing policy context with dual theme support and technical information*
+
 ### Access Info Page (`/cf-access/`)
 - Displays user identity and device information
 - Shows WARP status and security posture
