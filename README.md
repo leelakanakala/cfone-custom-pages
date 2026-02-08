@@ -27,6 +27,15 @@ Custom pages for Cloudflare Secure Web Gateway (SWG) and Cloudflare Access, prov
 ### Coaching Page (`/coaching/`)
 - Security awareness and training (coming soon)
 
+### DNS Analytics Dashboard (`/cf-dns-dashboard/`)
+- Real-time DNS query analytics and monitoring
+- Query trends visualization (24h, 7d, 30d)
+- Top allowed/blocked categories
+- Top queried domain names
+- Security policy effectiveness tracking
+- Matches existing theme system (light/dark mode)
+- See [DNS_DASHBOARD_README.md](./DNS_DASHBOARD_README.md) for detailed documentation
+
 ## Project Structure
 
 ```
@@ -40,7 +49,10 @@ cfone-custom-pages/
 │   │   │       ├── warpinfo.js
 │   │   │       ├── deviceinfo.js
 │   │   │       └── postureinfo.js
-│   │   └── coaching/index.html
+│   │   ├── coaching/index.html
+│   │   └── cf-dns-dashboard/
+│   │       ├── index.html
+│   │       └── categoryList.js
 │   ├── shared/
 │   │   ├── styles/theme.css
 │   │   └── scripts/theme-toggle.js
@@ -50,6 +62,7 @@ cfone-custom-pages/
 ├── wrangler.jsonc (gitignored)
 ├── wrangler.example.jsonc
 ├── ARCHITECTURE.md
+├── DNS_DASHBOARD_README.md
 └── README.md
 ```
 
