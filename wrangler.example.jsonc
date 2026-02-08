@@ -16,6 +16,20 @@
     {
       "pattern": "access.example.com/cf-access*",
       "zone_name": "example.com"
+    },
+    {
+      "pattern": "dash.0security.net/dns*",
+      "zone_name": "0security.net"
     }
-  ]
+  ],
+  
+  // Environment variables (use wrangler secret put for sensitive values)
+  // For cf-access page:
+  //   - BEARER_TOKEN: API token with Zero Trust read permissions
+  // For cf-dns-dashboard page:
+  //   - DNS_DASHBOARD_API_TOKEN: API token with Zero Trust read permissions
+  //   - DNS_DASHBOARD_ACCOUNT_ID: Your Cloudflare account ID
+  "vars": {
+    // "DNS_DASHBOARD_ACCOUNT_ID": "your-account-id-here"
+  }
 }

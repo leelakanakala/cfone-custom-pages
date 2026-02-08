@@ -3,6 +3,9 @@
   "version": "1.0.0",
   "description": "Cloudflare custom pages for SWG and user coaching",
   "main": "main.js",
+  "engines": {
+    "node": ">=18.0.0"
+  },
   "scripts": {
     "build": "node src/build.js",
     "dev": "npm run build && wrangler dev",
