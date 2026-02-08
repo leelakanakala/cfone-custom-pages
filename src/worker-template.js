@@ -23,6 +23,42 @@ export default {
       return servePostureInfoScript();
     } else if (path === '/coaching/' || path === '/coaching') {
       return serveCoachingPage(url);
+    } else if (path === '/dns/' || path === '/dns') {
+      return serveDNSDashboardPage(url);
+    } else if (path === '/dns/api/monthly-stats') {
+      return handleMonthlyStats(request, env);
+    } else if (path === '/dns/api/30day') {
+      return handle30DayDashboard(request, env);
+    } else if (path === '/dns/api/top-allowed') {
+      return handleTopAllowed(request, env);
+    } else if (path === '/dns/api/top-blocked') {
+      return handleTopBlocked(request, env);
+    } else if (path === '/dns/api/top-queries') {
+      return handleTopQueries(request, env);
+    } else if (path === '/dns/api/query-details') {
+      return handleQueryDetails(request, env);
+    } else if (path === '/dns/api/geography') {
+      return handleGeography(request, env);
+    } else if (path === '/dns/api/geography-details') {
+      return handleGeographyDetails(request, env);
+    } else if (path === '/dns/api/category-filtered') {
+      return handleCategoryFiltered(request, env);
+    } else if (path === '/dns/api/action-breakdown') {
+      return handleActionBreakdown(request, env);
+    } else if (path === '/dns/api/security-summary') {
+      return handleSecuritySummary(request, env);
+    } else if (path === '/dns/api/action-details') {
+      return handleActionDetails(request, env);
+    } else if (path === '/dns/api/geography-blocked') {
+      return handleGeographyBlocked(request, env);
+    } else if (path === '/dns/api/applications-pie') {
+      return handleApplicationsPie(request, env);
+    } else if (path === '/dns/api/category-queries') {
+      return handleCategoryQueries(request, env);
+    } else if (path === '/dns/api/newly-observed') {
+      return handleNewlyObserved(request, env);
+    } else if (path === '/dns/api/blocked-domains') {
+      return handleBlockedDomains(request, env);
     } else if (path === '/') {
       return Response.redirect(url.origin + '/cf-gateway/', 302);
     } else {
@@ -342,3 +378,1722 @@ function serveCoachingPage(url) {
     },
   });
 }
+
+// Serve DNS Dashboard Page
+function serveDNSDashboardPage(url) {
+  const dnsDashboardHTML = `__DNS_DASHBOARD_HTML__`;
+  
+  return new Response(dnsDashboardHTML, {
+    headers: {
+      'content-type': 'text/html;charset=UTF-8',
+      'cache-control': 'public, max-age=3600',
+    },
+  });
+}
+
+// DNS Dashboard API Handlers
+
+// Helper function to get date range based on time range parameter
+function getDateRange(timeRange) {
+  const now = new Date();
+  
+  if (timeRange === '1h') {
+    const startDate = new Date(now);
+    startDate.setHours(now.getHours() - 1);
+    return { startDate, endDate: now, excludeToday: false };
+  } else if (timeRange === '24h') {
+    const startDate = new Date(now);
+    startDate.setHours(now.getHours() - 24);
+    return { startDate, endDate: now, excludeToday: false };
+  } else if (timeRange === '7d') {
+    const endDate = new Date(now);
+    
+    const startDate = new Date(now);
+    startDate.setDate(startDate.getDate() - 6);
+    startDate.setHours(0, 0, 0, 0);
+    
+    return { startDate, endDate, excludeToday: false };
+  } else if (timeRange === '30d') {
+    const endDate = new Date(now);
+    
+    const startDate = new Date(now);
+    startDate.setDate(startDate.getDate() - 29);
+    startDate.setHours(0, 0, 0, 0);
+    
+    return { startDate, endDate, excludeToday: false };
+  }
+  
+  const startDate = new Date(now);
+  startDate.setHours(now.getHours() - 24);
+  return { startDate, endDate: now, excludeToday: false };
+}
+
+// Handle monthly stats API endpoint
+async function handleMonthlyStats(request, env) {
+  try {
+    const url = new URL(request.url);
+    const timeRange = url.searchParams.get('timeRange') || '24h';
+    const { startDate, endDate } = getDateRange(timeRange);
+
+    const query = `
+      query {
+        viewer {
+          accounts(filter: {accountTag: "${env.DNS_DASHBOARD_ACCOUNT_ID}"}) {
+            gatewayResolverQueriesAdaptiveGroups(
+              filter: {
+                datetime_geq: "${startDate.toISOString()}"
+                datetime_leq: "${endDate.toISOString()}"
+              }
+              limit: 10000
+              orderBy: [count_DESC]
+            ) {
+              count
+              dimensions {
+                resolverDecision
+              }
+            }
+          }
+        }
+      }
+    `;
+
+    const response = await fetch('https://api.cloudflare.com/client/v4/graphql', {
+      method: 'POST',
+      headers: {
+        'Authorization': `Bearer ${env.DNS_DASHBOARD_API_TOKEN}`,
+        'Content-Type': 'application/json',
+      },
+      body: JSON.stringify({ query }),
+    });
+
+    if (!response.ok) {
+      throw new Error(`GraphQL API error: ${response.status}`);
+    }
+
+    const data = await response.json();
+
+    if (data.errors) {
+      throw new Error(`GraphQL errors: ${data.errors.map(e => e.message).join(', ')}`);
+    }
+
+    let totalQueries = 0;
+    let allowedQueries = 0;
+    let blockedQueries = 0;
+
+    if (data.data?.viewer?.accounts?.[0]?.gatewayResolverQueriesAdaptiveGroups) {
+      const groups = data.data.viewer.accounts[0].gatewayResolverQueriesAdaptiveGroups;
+
+      groups.forEach(group => {
+        const count = group.count || 0;
+        const resolverDecision = group.dimensions?.resolverDecision;
+
+        totalQueries += count;
+
+        if ([2, 3, 6, 9].includes(resolverDecision)) {
+          blockedQueries += count;
+        } else {
+          allowedQueries += count;
+        }
+      });
+    }
+
+    const result = {
+      totalQueries,
+      allowedQueries,
+      blockedQueries
+    };
+
+    return new Response(JSON.stringify(result), {
+      headers: { 'Content-Type': 'application/json' },
+    });
+  } catch (error) {
+    console.error('Monthly stats error:', error);
+    return new Response(JSON.stringify({
+      error: error.message,
+      message: 'Failed to fetch monthly stats'
+    }), {
+      status: 500,
+      headers: { 'Content-Type': 'application/json' },
+    });
+  }
+}
+
+// Handle 30-day dashboard data
+async function handle30DayDashboard(request, env) {
+  try {
+    const url = new URL(request.url);
+    const timeRange = url.searchParams.get('timeRange') || '7d';
+    const { startDate, endDate } = getDateRange(timeRange);
+
+    const query = `
+      query {
+        viewer {
+          accounts(filter: {accountTag: "${env.DNS_DASHBOARD_ACCOUNT_ID}"}) {
+            gatewayResolverQueriesAdaptiveGroups(
+              filter: {
+                datetime_geq: "${startDate.toISOString()}"
+                datetime_leq: "${endDate.toISOString()}"
+              }
+              limit: 10000
+              orderBy: [datetimeHour_ASC]
+            ) {
+              count
+              dimensions {
+                resolverDecision
+                datetimeHour
+              }
+            }
+          }
+        }
+      }
+    `;
+
+    const response = await fetch('https://api.cloudflare.com/client/v4/graphql', {
+      method: 'POST',
+      headers: {
+        'Authorization': `Bearer ${env.DNS_DASHBOARD_API_TOKEN}`,
+        'Content-Type': 'application/json',
+      },
+      body: JSON.stringify({ query }),
+    });
+
+    if (!response.ok) {
+      throw new Error(`GraphQL API error: ${response.status}`);
+    }
+
+    const data = await response.json();
+
+    if (data.errors) {
+      throw new Error(`GraphQL errors: ${data.errors.map(e => e.message).join(', ')}`);
+    }
+
+    const dailyData = {};
+
+    if (data.data?.viewer?.accounts?.[0]?.gatewayResolverQueriesAdaptiveGroups) {
+      const groups = data.data.viewer.accounts[0].gatewayResolverQueriesAdaptiveGroups;
+
+      groups.forEach(group => {
+        const count = group.count || 0;
+        const decision = group.dimensions?.resolverDecision;
+        const datetimeHour = group.dimensions?.datetimeHour;
+
+        if (!datetimeHour) return;
+
+        const dateStr = (timeRange === '1h' || timeRange === '24h') ? datetimeHour : datetimeHour.split('T')[0];
+
+        if (!dailyData[dateStr]) {
+          dailyData[dateStr] = { 
+            unknown: 0,
+            allowed: 0, 
+            blocked: 0,
+            safeSearch: 0,
+            overrideApplied: 0,
+            total: 0
+          };
+        }
+
+        if (decision === 0) {
+          dailyData[dateStr].unknown += count;
+        } else if (decision === 2 || decision === 3 || decision === 6 || decision === 9) {
+          dailyData[dateStr].blocked += count;
+        } else if (decision === 7) {
+          dailyData[dateStr].safeSearch += count;
+        } else if (decision === 8) {
+          dailyData[dateStr].overrideApplied += count;
+        } else {
+          dailyData[dateStr].allowed += count;
+        }
+        
+        dailyData[dateStr].total += count;
+      });
+    }
+
+    const result = Object.entries(dailyData)
+      .map(([date, counts]) => ({
+        date,
+        unknown: counts.unknown,
+        allowed: counts.allowed,
+        blocked: counts.blocked,
+        safeSearch: counts.safeSearch,
+        overrideApplied: counts.overrideApplied,
+        total: counts.total
+      }))
+      .sort((a, b) => a.date.localeCompare(b.date));
+
+    return new Response(JSON.stringify(result), {
+      headers: { 'Content-Type': 'application/json' },
+    });
+  } catch (error) {
+    console.error('30-day dashboard error:', error);
+    return new Response(JSON.stringify({
+      error: error.message,
+      message: 'Failed to fetch 30-day dashboard data'
+    }), {
+      status: 500,
+      headers: { 'Content-Type': 'application/json' },
+    });
+  }
+}
+
+// Handle top allowed categories
+async function handleTopAllowed(request, env) {
+  try {
+    const url = new URL(request.url);
+    const timeRange = url.searchParams.get('timeRange') || '7d';
+    const { startDate, endDate } = getDateRange(timeRange);
+
+    const query = `
+      query {
+        viewer {
+          accounts(filter: {accountTag: "${env.DNS_DASHBOARD_ACCOUNT_ID}"}) {
+            gatewayResolverByCategoryAdaptiveGroups(
+              filter: {
+                datetime_geq: "${startDate.toISOString()}"
+                datetime_leq: "${endDate.toISOString()}"
+                resolverDecision_in: [0, 1, 4, 5, 7, 8, 10]
+              }
+              limit: 10000
+              orderBy: [count_DESC]
+            ) {
+              count
+              dimensions {
+                categoryId
+              }
+            }
+          }
+        }
+      }
+    `;
+
+    const response = await fetch('https://api.cloudflare.com/client/v4/graphql', {
+      method: 'POST',
+      headers: {
+        'Authorization': `Bearer ${env.DNS_DASHBOARD_API_TOKEN}`,
+        'Content-Type': 'application/json',
+      },
+      body: JSON.stringify({ query }),
+    });
+
+    if (!response.ok) {
+      throw new Error(`GraphQL API error: ${response.status}`);
+    }
+
+    const data = await response.json();
+
+    if (data.errors) {
+      throw new Error(`GraphQL errors: ${data.errors.map(e => e.message).join(', ')}`);
+    }
+
+    const categoryCounts = {};
+
+    if (data.data?.viewer?.accounts?.[0]?.gatewayResolverByCategoryAdaptiveGroups) {
+      const groups = data.data.viewer.accounts[0].gatewayResolverByCategoryAdaptiveGroups;
+
+      groups.forEach(group => {
+        const count = group.count || 0;
+        const categoryId = group.dimensions?.categoryId;
+        const categoryName = CATEGORIES[categoryId] || `Category ${categoryId}`;
+
+        if (!categoryCounts[categoryName]) {
+          categoryCounts[categoryName] = 0;
+        }
+        categoryCounts[categoryName] += count;
+      });
+    }
+
+    const topCategories = Object.entries(categoryCounts)
+      .map(([category, count]) => ({ category, count }))
+      .sort((a, b) => b.count - a.count)
+      .slice(0, 20);
+
+    return new Response(JSON.stringify(topCategories), {
+      headers: { 'Content-Type': 'application/json' },
+    });
+  } catch (error) {
+    console.error('Top allowed error:', error);
+    return new Response(JSON.stringify({
+      error: error.message,
+      message: 'Failed to fetch top allowed categories'
+    }), {
+      status: 500,
+      headers: { 'Content-Type': 'application/json' },
+    });
+  }
+}
+
+// Handle top blocked categories
+async function handleTopBlocked(request, env) {
+  try {
+    const url = new URL(request.url);
+    const timeRange = url.searchParams.get('timeRange') || '7d';
+    const { startDate, endDate } = getDateRange(timeRange);
+
+    const query = `
+      query {
+        viewer {
+          accounts(filter: {accountTag: "${env.DNS_DASHBOARD_ACCOUNT_ID}"}) {
+            gatewayResolverQueriesAdaptiveGroups(
+              filter: {
+                datetime_geq: "${startDate.toISOString()}"
+                datetime_leq: "${endDate.toISOString()}"
+                resolverDecision_in: [2, 3, 6, 9]
+              }
+              limit: 10000
+              orderBy: [count_DESC]
+            ) {
+              count
+              dimensions {
+                categoryIds
+              }
+            }
+          }
+        }
+      }
+    `;
+
+    const response = await fetch('https://api.cloudflare.com/client/v4/graphql', {
+      method: 'POST',
+      headers: {
+        'Authorization': `Bearer ${env.DNS_DASHBOARD_API_TOKEN}`,
+        'Content-Type': 'application/json',
+      },
+      body: JSON.stringify({ query }),
+    });
+
+    if (!response.ok) {
+      throw new Error(`GraphQL API error: ${response.status}`);
+    }
+
+    const data = await response.json();
+
+    if (data.errors) {
+      throw new Error(`GraphQL errors: ${data.errors.map(e => e.message).join(', ')}`);
+    }
+
+    const categoryCounts = {};
+
+    if (data.data?.viewer?.accounts?.[0]?.gatewayResolverQueriesAdaptiveGroups) {
+      const groups = data.data.viewer.accounts[0].gatewayResolverQueriesAdaptiveGroups;
+
+      groups.forEach(group => {
+        const count = group.count || 0;
+        const categoryIds = group.dimensions?.categoryIds || '';
+        
+        if (categoryIds) {
+          const cleanedIds = categoryIds.replace(/[\[\]]/g, '');
+          const ids = cleanedIds.split(',').map(id => id.trim()).filter(id => id);
+          ids.forEach(categoryId => {
+            const categoryName = CATEGORIES[categoryId] || `Category ${categoryId}`;
+            if (!categoryCounts[categoryName]) {
+              categoryCounts[categoryName] = 0;
+            }
+            categoryCounts[categoryName] += count;
+          });
+        }
+      });
+    }
+
+    const topCategories = Object.entries(categoryCounts)
+      .map(([category, count]) => ({ category, count }))
+      .sort((a, b) => b.count - a.count)
+      .slice(0, 20);
+
+    return new Response(JSON.stringify(topCategories), {
+      headers: { 'Content-Type': 'application/json' },
+    });
+  } catch (error) {
+    console.error('Top blocked error:', error);
+    return new Response(JSON.stringify({
+      error: error.message,
+      message: 'Failed to fetch top blocked categories'
+    }), {
+      status: 500,
+      headers: { 'Content-Type': 'application/json' },
+    });
+  }
+}
+
+// Handle top queries
+async function handleTopQueries(request, env) {
+  try {
+    const url = new URL(request.url);
+    const timeRange = url.searchParams.get('timeRange') || '7d';
+    const { startDate, endDate } = getDateRange(timeRange);
+
+    const query = `
+      query {
+        viewer {
+          accounts(filter: {accountTag: "${env.DNS_DASHBOARD_ACCOUNT_ID}"}) {
+            gatewayResolverQueriesAdaptiveGroups(
+              filter: {
+                datetime_geq: "${startDate.toISOString()}"
+                datetime_leq: "${endDate.toISOString()}"
+              }
+              limit: 10000
+              orderBy: [count_DESC]
+            ) {
+              count
+              dimensions {
+                queryName
+              }
+            }
+          }
+        }
+      }
+    `;
+
+    const response = await fetch('https://api.cloudflare.com/client/v4/graphql', {
+      method: 'POST',
+      headers: {
+        'Authorization': `Bearer ${env.DNS_DASHBOARD_API_TOKEN}`,
+        'Content-Type': 'application/json',
+      },
+      body: JSON.stringify({ query }),
+    });
+
+    if (!response.ok) {
+      throw new Error(`GraphQL API error: ${response.status}`);
+    }
+
+    const data = await response.json();
+
+    if (data.errors) {
+      throw new Error(`GraphQL errors: ${data.errors.map(e => e.message).join(', ')}`);
+    }
+
+    const queryCounts = {};
+
+    if (data.data?.viewer?.accounts?.[0]?.gatewayResolverQueriesAdaptiveGroups) {
+      const groups = data.data.viewer.accounts[0].gatewayResolverQueriesAdaptiveGroups;
+
+      groups.forEach(group => {
+        const count = group.count || 0;
+        const queryName = group.dimensions?.queryName || 'Unknown';
+
+        if (!queryCounts[queryName]) {
+          queryCounts[queryName] = 0;
+        }
+        queryCounts[queryName] += count;
+      });
+    }
+
+    const topQueries = Object.entries(queryCounts)
+      .map(([query, count]) => ({ query, count }))
+      .sort((a, b) => b.count - a.count)
+      .slice(0, 20);
+
+    return new Response(JSON.stringify(topQueries), {
+      headers: { 'Content-Type': 'application/json' },
+    });
+  } catch (error) {
+    console.error('Top queries error:', error);
+    return new Response(JSON.stringify({
+      error: error.message,
+      message: 'Failed to fetch top queries'
+    }), {
+      status: 500,
+      headers: { 'Content-Type': 'application/json' },
+    });
+  }
+}
+
+// Handle detailed query data for clicked chart bars
+async function handleQueryDetails(request, env) {
+  try {
+    const url = new URL(request.url);
+    const date = url.searchParams.get('date');
+    const type = url.searchParams.get('type');
+    const timeRange = url.searchParams.get('timeRange') || '7d';
+    const decisionsParam = url.searchParams.get('decisions');
+
+    if (!date) {
+      return new Response(JSON.stringify({ error: 'Missing date parameter' }), {
+        status: 400,
+        headers: { 'Content-Type': 'application/json' },
+      });
+    }
+
+    // Parse the date and create start/end times
+    let startDate, endDate;
+    if (timeRange === '24h') {
+      // For hourly data, date is an ISO timestamp
+      startDate = new Date(date);
+      endDate = new Date(startDate.getTime() + 60 * 60 * 1000); // +1 hour
+    } else {
+      // For daily data, date is YYYY-MM-DD
+      const [year, month, day] = date.split('-').map(Number);
+      startDate = new Date(year, month - 1, day);
+      endDate = new Date(year, month - 1, day + 1);
+    }
+
+    // Use provided resolver decisions or determine from type
+    let resolverDecisions;
+    if (decisionsParam) {
+      resolverDecisions = decisionsParam.split(',').map(Number);
+    } else if (type === 'blocked') {
+      resolverDecisions = [2, 3, 6, 9];
+    } else {
+      resolverDecisions = [0, 1, 4, 5, 7, 8, 10];
+    }
+
+    const query = `
+      query {
+        viewer {
+          accounts(filter: {accountTag: "${env.DNS_DASHBOARD_ACCOUNT_ID}"}) {
+            gatewayResolverQueriesAdaptiveGroups(
+              filter: {
+                datetime_geq: "${startDate.toISOString()}"
+                datetime_leq: "${endDate.toISOString()}"
+              }
+              limit: 10000
+              orderBy: [count_DESC]
+            ) {
+              count
+              dimensions {
+                resolverDecision
+                queryName
+                categoryNames
+              }
+            }
+          }
+        }
+      }
+    `;
+
+    const response = await fetch('https://api.cloudflare.com/client/v4/graphql', {
+      method: 'POST',
+      headers: {
+        'Authorization': `Bearer ${env.DNS_DASHBOARD_API_TOKEN}`,
+        'Content-Type': 'application/json',
+      },
+      body: JSON.stringify({ query }),
+    });
+
+    if (!response.ok) {
+      throw new Error(`GraphQL API error: ${response.status}`);
+    }
+
+    const data = await response.json();
+
+    if (data.errors) {
+      throw new Error(`GraphQL errors: ${data.errors.map(e => e.message).join(', ')}`);
+    }
+
+    // Process data to group by category
+    const categoryMap = {};
+
+    if (data.data?.viewer?.accounts?.[0]?.gatewayResolverQueriesAdaptiveGroups) {
+      const groups = data.data.viewer.accounts[0].gatewayResolverQueriesAdaptiveGroups;
+
+      groups.forEach(group => {
+        const decision = group.dimensions?.resolverDecision;
+        const count = group.count || 0;
+        const queryName = group.dimensions?.queryName || 'Unknown';
+        const categoryNames = group.dimensions?.categoryNames || ['Uncategorized'];
+
+        // Filter by resolver decision
+        if (resolverDecisions.includes(decision)) {
+          categoryNames.forEach(category => {
+            if (!categoryMap[category]) {
+              categoryMap[category] = {};
+            }
+            categoryMap[category][queryName] = (categoryMap[category][queryName] || 0) + count;
+          });
+        }
+      });
+    }
+
+    // Convert to array format
+    const categories = Object.entries(categoryMap).map(([name, queries]) => ({
+      name,
+      totalQueries: Object.values(queries).reduce((sum, count) => sum + count, 0),
+      queries: Object.entries(queries)
+        .sort(([, a], [, b]) => b - a)
+        .slice(0, 50)
+        .map(([domain, count]) => ({ domain, count }))
+    })).sort((a, b) => b.totalQueries - a.totalQueries);
+
+    return new Response(JSON.stringify({ categories }), {
+      headers: { 'Content-Type': 'application/json' },
+    });
+  } catch (error) {
+    console.error('Query details error:', error);
+    return new Response(JSON.stringify({
+      error: error.message,
+      message: 'Failed to fetch query details'
+    }), {
+      status: 500,
+      headers: { 'Content-Type': 'application/json' },
+    });
+  }
+}
+
+// Handle geography-based DNS query volume
+async function handleGeography(request, env) {
+  try {
+    const url = new URL(request.url);
+    const timeRange = url.searchParams.get('timeRange') || '7d';
+    const { startDate, endDate } = getDateRange(timeRange);
+
+    const query = `
+      query {
+        viewer {
+          accounts(filter: {accountTag: "${env.DNS_DASHBOARD_ACCOUNT_ID}"}) {
+            gatewayResolverQueriesAdaptiveGroups(
+              filter: {
+                datetime_geq: "${startDate.toISOString()}"
+                datetime_leq: "${endDate.toISOString()}"
+              }
+              limit: 10000
+              orderBy: [count_DESC]
+            ) {
+              count
+              dimensions {
+                srcIpCountry
+              }
+            }
+          }
+        }
+      }
+    `;
+
+    const response = await fetch('https://api.cloudflare.com/client/v4/graphql', {
+      method: 'POST',
+      headers: {
+        'Authorization': `Bearer ${env.DNS_DASHBOARD_API_TOKEN}`,
+        'Content-Type': 'application/json',
+      },
+      body: JSON.stringify({ query }),
+    });
+
+    if (!response.ok) {
+      throw new Error(`GraphQL API error: ${response.status}`);
+    }
+
+    const data = await response.json();
+
+    if (data.errors) {
+      throw new Error(`GraphQL errors: ${data.errors.map(e => e.message).join(', ')}`);
+    }
+
+    const countryCounts = {};
+
+    if (data.data?.viewer?.accounts?.[0]?.gatewayResolverQueriesAdaptiveGroups) {
+      const groups = data.data.viewer.accounts[0].gatewayResolverQueriesAdaptiveGroups;
+
+      groups.forEach(group => {
+        const count = group.count || 0;
+        const rawCountry = group.dimensions?.srcIpCountry || 'Unknown';
+        const countryCode = rawCountry.toUpperCase();
+
+        if (!countryCounts[countryCode]) {
+          countryCounts[countryCode] = 0;
+        }
+        countryCounts[countryCode] += count;
+      });
+    }
+
+    const result = Object.entries(countryCounts)
+      .map(([country, count]) => ({ country, count }))
+      .sort((a, b) => b.count - a.count);
+
+    return new Response(JSON.stringify(result), {
+      headers: { 'Content-Type': 'application/json' },
+    });
+  } catch (error) {
+    console.error('Geography error:', error);
+    return new Response(JSON.stringify({
+      error: error.message,
+      message: 'Failed to fetch geography data'
+    }), {
+      status: 500,
+      headers: { 'Content-Type': 'application/json' },
+    });
+  }
+}
+
+// Handle geography drill-down details
+async function handleGeographyDetails(request, env) {
+  try {
+    const url = new URL(request.url);
+    const country = url.searchParams.get('country');
+    const timeRange = url.searchParams.get('timeRange') || '7d';
+    const { startDate, endDate } = getDateRange(timeRange);
+
+    if (!country) {
+      return new Response(JSON.stringify({ error: 'Missing country parameter' }), {
+        status: 400,
+        headers: { 'Content-Type': 'application/json' },
+      });
+    }
+
+    const query = `
+      query {
+        viewer {
+          accounts(filter: {accountTag: "${env.DNS_DASHBOARD_ACCOUNT_ID}"}) {
+            gatewayResolverQueriesAdaptiveGroups(
+              filter: {
+                datetime_geq: "${startDate.toISOString()}"
+                datetime_leq: "${endDate.toISOString()}"
+                srcIpCountry: "${country}"
+              }
+              limit: 10000
+              orderBy: [count_DESC]
+            ) {
+              count
+              dimensions {
+                queryName
+                resolverDecision
+              }
+            }
+          }
+        }
+      }
+    `;
+
+    const response = await fetch('https://api.cloudflare.com/client/v4/graphql', {
+      method: 'POST',
+      headers: {
+        'Authorization': `Bearer ${env.DNS_DASHBOARD_API_TOKEN}`,
+        'Content-Type': 'application/json',
+      },
+      body: JSON.stringify({ query }),
+    });
+
+    if (!response.ok) {
+      throw new Error(`GraphQL API error: ${response.status}`);
+    }
+
+    const data = await response.json();
+
+    if (data.errors) {
+      throw new Error(`GraphQL errors: ${data.errors.map(e => e.message).join(', ')}`);
+    }
+
+    const queryCounts = {};
+    let totalQueries = 0;
+    let blockedQueries = 0;
+
+    if (data.data?.viewer?.accounts?.[0]?.gatewayResolverQueriesAdaptiveGroups) {
+      const groups = data.data.viewer.accounts[0].gatewayResolverQueriesAdaptiveGroups;
+
+      groups.forEach(group => {
+        const count = group.count || 0;
+        const queryName = group.dimensions?.queryName || 'Unknown';
+        const decision = group.dimensions?.resolverDecision;
+
+        if (!queryCounts[queryName]) {
+          queryCounts[queryName] = 0;
+        }
+        queryCounts[queryName] += count;
+        totalQueries += count;
+
+        if (decision === 2 || decision === 3 || decision === 6 || decision === 9) {
+          blockedQueries += count;
+        }
+      });
+    }
+
+    const topQueries = Object.entries(queryCounts)
+      .map(([query, count]) => ({ query, count }))
+      .sort((a, b) => b.count - a.count)
+      .slice(0, 50);
+
+    return new Response(JSON.stringify({
+      country,
+      totalQueries,
+      blockedQueries,
+      queries: topQueries
+    }), {
+      headers: { 'Content-Type': 'application/json' },
+    });
+  } catch (error) {
+    console.error('Geography details error:', error);
+    return new Response(JSON.stringify({
+      error: error.message,
+      message: 'Failed to fetch geography details'
+    }), {
+      status: 500,
+      headers: { 'Content-Type': 'application/json' },
+    });
+  }
+}
+
+// Category list for DNS dashboard
+const CATEGORIES = __CATEGORY_LIST__;
+
+// Handle category-based queries with filters (location, geo, user)
+async function handleCategoryFiltered(request, env) {
+  try {
+    const url = new URL(request.url);
+    const timeRange = url.searchParams.get('timeRange') || '7d';
+    const location = url.searchParams.get('location');
+    const country = url.searchParams.get('country');
+    const userEmail = url.searchParams.get('user');
+    const { startDate, endDate } = getDateRange(timeRange);
+
+    let filterConditions = `
+      datetime_geq: "${startDate.toISOString()}"
+      datetime_leq: "${endDate.toISOString()}"
+    `;
+
+    if (location) {
+      filterConditions += `\n      locationName: "${location}"`;
+    }
+    if (country) {
+      filterConditions += `\n      locationName: "${country}"`;
+    }
+    if (userEmail) {
+      filterConditions += `\n      userEmail: "${userEmail}"`;
+    }
+
+    const query = `
+      query {
+        viewer {
+          accounts(filter: {accountTag: "${env.DNS_DASHBOARD_ACCOUNT_ID}"}) {
+            gatewayResolverByCategoryAdaptiveGroups(
+              filter: {
+                ${filterConditions}
+              }
+              limit: 10000
+              orderBy: [count_DESC]
+            ) {
+              count
+              dimensions {
+                categoryId
+              }
+            }
+          }
+        }
+      }
+    `;
+
+    const response = await fetch('https://api.cloudflare.com/client/v4/graphql', {
+      method: 'POST',
+      headers: {
+        'Authorization': `Bearer ${env.DNS_DASHBOARD_API_TOKEN}`,
+        'Content-Type': 'application/json',
+      },
+      body: JSON.stringify({ query }),
+    });
+
+    if (!response.ok) {
+      throw new Error(`GraphQL API error: ${response.status}`);
+    }
+
+    const data = await response.json();
+
+    if (data.errors) {
+      throw new Error(`GraphQL errors: ${data.errors.map(e => e.message).join(', ')}`);
+    }
+
+    const categoryCounts = {};
+    let totalQueries = 0;
+
+    if (data.data?.viewer?.accounts?.[0]?.gatewayResolverByCategoryAdaptiveGroups) {
+      const groups = data.data.viewer.accounts[0].gatewayResolverByCategoryAdaptiveGroups;
+
+      groups.forEach(group => {
+        const count = group.count || 0;
+        const categoryId = group.dimensions?.categoryId;
+        
+        // Only include parent categories (IDs < 66) for the main category chart
+        // Sub-categories (IDs >= 66) are shown in the sub-category chart
+        if (categoryId >= 66) return;
+        
+        const categoryName = CATEGORIES[categoryId] || `Category ${categoryId}`;
+
+        if (!categoryCounts[categoryName]) {
+          categoryCounts[categoryName] = 0;
+        }
+        categoryCounts[categoryName] += count;
+        totalQueries += count;
+      });
+    }
+
+    const result = Object.entries(categoryCounts)
+      .map(([category, count]) => ({
+        category,
+        count,
+        percent: totalQueries > 0 ? ((count / totalQueries) * 100).toFixed(2) : '0.00'
+      }))
+      .sort((a, b) => b.count - a.count);
+
+    return new Response(JSON.stringify(result), {
+      headers: { 'Content-Type': 'application/json' },
+    });
+  } catch (error) {
+    console.error('Category filtered error:', error);
+    return new Response(JSON.stringify({
+      error: error.message,
+      message: 'Failed to fetch filtered category data'
+    }), {
+      status: 500,
+      headers: { 'Content-Type': 'application/json' },
+    });
+  }
+}
+
+// Handle action breakdown - shows DNS resolver decisions
+async function handleActionBreakdown(request, env) {
+  try {
+    const url = new URL(request.url);
+    const timeRange = url.searchParams.get('timeRange') || '7d';
+    const { startDate, endDate } = getDateRange(timeRange);
+
+    const query = `
+      query {
+        viewer {
+          accounts(filter: {accountTag: "${env.DNS_DASHBOARD_ACCOUNT_ID}"}) {
+            gatewayResolverQueriesAdaptiveGroups(
+              filter: {
+                datetime_geq: "${startDate.toISOString()}"
+                datetime_leq: "${endDate.toISOString()}"
+              }
+              limit: 10000
+              orderBy: [count_DESC]
+            ) {
+              count
+              dimensions {
+                resolverDecision
+              }
+            }
+          }
+        }
+      }
+    `;
+
+    const response = await fetch('https://api.cloudflare.com/client/v4/graphql', {
+      method: 'POST',
+      headers: {
+        'Authorization': `Bearer ${env.DNS_DASHBOARD_API_TOKEN}`,
+        'Content-Type': 'application/json',
+      },
+      body: JSON.stringify({ query }),
+    });
+
+    if (!response.ok) {
+      throw new Error(`GraphQL API error: ${response.status}`);
+    }
+
+    const data = await response.json();
+
+    if (data.errors) {
+      throw new Error(`GraphQL errors: ${data.errors.map(e => e.message).join(', ')}`);
+    }
+
+    const decisionMap = {
+      0: 'Unknown',
+      1: 'Allowed by Query Name',
+      2: 'Blocked by Query Name',
+      3: 'Blocked by Category',
+      4: 'Allowed (No Location)',
+      5: 'Allowed (No Policy Match)',
+      6: 'Blocked (Always Blocked Category)',
+      7: 'Safe Search Override',
+      8: 'Override Applied',
+      9: 'Blocked by Rule',
+      10: 'Allowed by Rule'
+    };
+
+    const actionCounts = {};
+    let totalQueries = 0;
+
+    if (data.data?.viewer?.accounts?.[0]?.gatewayResolverQueriesAdaptiveGroups) {
+      const groups = data.data.viewer.accounts[0].gatewayResolverQueriesAdaptiveGroups;
+
+      groups.forEach(group => {
+        const count = group.count || 0;
+        const decision = group.dimensions?.resolverDecision;
+        const actionName = decisionMap[decision] || `Unknown (${decision})`;
+
+        if (!actionCounts[actionName]) {
+          actionCounts[actionName] = 0;
+        }
+        actionCounts[actionName] += count;
+        totalQueries += count;
+      });
+    }
+
+    const result = Object.entries(actionCounts)
+      .map(([action, count]) => ({
+        action,
+        count,
+        percent: totalQueries > 0 ? ((count / totalQueries) * 100).toFixed(2) : '0.00'
+      }))
+      .sort((a, b) => b.count - a.count);
+
+    return new Response(JSON.stringify(result), {
+      headers: { 'Content-Type': 'application/json' },
+    });
+  } catch (error) {
+    console.error('Action breakdown error:', error);
+    return new Response(JSON.stringify({
+      error: error.message,
+      message: 'Failed to fetch action breakdown'
+    }), {
+      status: 500,
+      headers: { 'Content-Type': 'application/json' },
+    });
+  }
+}
+
+// Handle security summary dashboard
+async function handleSecuritySummary(request, env) {
+  try {
+    const url = new URL(request.url);
+    const timeRange = url.searchParams.get('timeRange') || '7d';
+    const { startDate, endDate } = getDateRange(timeRange);
+
+    const query = `
+      query {
+        viewer {
+          accounts(filter: {accountTag: "${env.DNS_DASHBOARD_ACCOUNT_ID}"}) {
+            gatewayResolverQueriesAdaptiveGroups(
+              filter: {
+                datetime_geq: "${startDate.toISOString()}"
+                datetime_leq: "${endDate.toISOString()}"
+              }
+              limit: 10000
+              orderBy: [count_DESC]
+            ) {
+              count
+              dimensions {
+                resolverDecision
+              }
+            }
+          }
+        }
+      }
+    `;
+
+    const response = await fetch('https://api.cloudflare.com/client/v4/graphql', {
+      method: 'POST',
+      headers: {
+        'Authorization': `Bearer ${env.DNS_DASHBOARD_API_TOKEN}`,
+        'Content-Type': 'application/json',
+      },
+      body: JSON.stringify({ query }),
+    });
+
+    if (!response.ok) {
+      throw new Error(`GraphQL API error: ${response.status}`);
+    }
+
+    const data = await response.json();
+
+    if (data.errors) {
+      throw new Error(`GraphQL errors: ${data.errors.map(e => e.message).join(', ')}`);
+    }
+
+    let totalQueries = 0;
+    let blockedQueries = 0;
+    let allowedQueries = 0;
+    let safeSearchQueries = 0;
+
+    if (data.data?.viewer?.accounts?.[0]?.gatewayResolverQueriesAdaptiveGroups) {
+      const groups = data.data.viewer.accounts[0].gatewayResolverQueriesAdaptiveGroups;
+
+      groups.forEach(group => {
+        const count = group.count || 0;
+        const decision = group.dimensions?.resolverDecision;
+
+        totalQueries += count;
+
+        if (decision === 2 || decision === 3 || decision === 6 || decision === 9) {
+          blockedQueries += count;
+        } else if (decision === 7) {
+          safeSearchQueries += count;
+        } else {
+          allowedQueries += count;
+        }
+      });
+    }
+
+    const blockRate = totalQueries > 0 ? ((blockedQueries / totalQueries) * 100).toFixed(2) : '0.00';
+    const allowRate = totalQueries > 0 ? ((allowedQueries / totalQueries) * 100).toFixed(2) : '0.00';
+    const safeSearchRate = totalQueries > 0 ? ((safeSearchQueries / totalQueries) * 100).toFixed(2) : '0.00';
+
+    return new Response(JSON.stringify({
+      totalQueries,
+      blockedQueries,
+      allowedQueries,
+      safeSearchQueries,
+      blockRate,
+      allowRate,
+      safeSearchRate
+    }), {
+      headers: { 'Content-Type': 'application/json' },
+    });
+  } catch (error) {
+    console.error('Security summary error:', error);
+    return new Response(JSON.stringify({
+      error: error.message,
+      message: 'Failed to fetch security summary'
+    }), {
+      status: 500,
+      headers: { 'Content-Type': 'application/json' },
+    });
+  }
+}
+
+// Handle action details API endpoint
+async function handleActionDetails(request, env) {
+  try {
+    const url = new URL(request.url);
+    const timeRange = url.searchParams.get('timeRange') || '7d';
+    const decisions = url.searchParams.get('decisions')?.split(',').map(Number) || [];
+    const { startDate, endDate } = getDateRange(timeRange);
+
+    const query = `
+      query {
+        viewer {
+          accounts(filter: {accountTag: "${env.DNS_DASHBOARD_ACCOUNT_ID}"}) {
+            gatewayResolverQueriesAdaptiveGroups(
+              filter: {
+                datetime_geq: "${startDate.toISOString()}"
+                datetime_leq: "${endDate.toISOString()}"
+                ${decisions.length > 0 ? `resolverDecision_in: [${decisions.join(',')}]` : ''}
+              }
+              limit: 100
+              orderBy: [count_DESC]
+            ) {
+              count
+              dimensions {
+                queryName
+                policyName
+                policyId
+                resolverDecision
+              }
+            }
+          }
+        }
+      }
+    `;
+
+    const response = await fetch('https://api.cloudflare.com/client/v4/graphql', {
+      method: 'POST',
+      headers: {
+        'Authorization': `Bearer ${env.DNS_DASHBOARD_API_TOKEN}`,
+        'Content-Type': 'application/json',
+      },
+      body: JSON.stringify({ query }),
+    });
+
+    if (!response.ok) {
+      throw new Error(`GraphQL API error: ${response.status}`);
+    }
+
+    const data = await response.json();
+
+    if (data.errors) {
+      throw new Error(`GraphQL errors: ${data.errors.map(e => e.message).join(', ')}`);
+    }
+
+    const queries = [];
+
+    if (data.data?.viewer?.accounts?.[0]?.gatewayResolverQueriesAdaptiveGroups) {
+      const groups = data.data.viewer.accounts[0].gatewayResolverQueriesAdaptiveGroups;
+
+      groups.forEach(group => {
+        const policyName = group.dimensions?.policyName;
+        const policyId = group.dimensions?.policyId;
+        
+        // Determine display policy name
+        let displayPolicy = 'No Specific Policy';
+        if (policyName && policyName.trim() !== '') {
+          displayPolicy = policyName;
+        } else if (policyId && policyId.trim() !== '') {
+          displayPolicy = `Policy ID: ${policyId}`;
+        }
+        
+        queries.push({
+          queryName: group.dimensions?.queryName || 'Unknown',
+          policyName: displayPolicy,
+          count: group.count || 0
+        });
+      });
+    }
+
+    return new Response(JSON.stringify({ queries }), {
+      headers: { 'Content-Type': 'application/json' },
+    });
+  } catch (error) {
+    console.error('Action details error:', error);
+    return new Response(JSON.stringify({
+      error: error.message,
+      message: 'Failed to fetch action details'
+    }), {
+      status: 500,
+      headers: { 'Content-Type': 'application/json' },
+    });
+  }
+}
+
+// Handle geography blocked API endpoint
+async function handleGeographyBlocked(request, env) {
+  try {
+    const url = new URL(request.url);
+    const timeRange = url.searchParams.get('timeRange') || '7d';
+    const { startDate, endDate } = getDateRange(timeRange);
+
+    const query = `
+      query {
+        viewer {
+          accounts(filter: {accountTag: "${env.DNS_DASHBOARD_ACCOUNT_ID}"}) {
+            gatewayResolverQueriesAdaptiveGroups(
+              filter: {
+                datetime_geq: "${startDate.toISOString()}"
+                datetime_leq: "${endDate.toISOString()}"
+                resolverDecision_in: [2, 3, 6, 9]
+              }
+              limit: 100
+              orderBy: [count_DESC]
+            ) {
+              count
+              dimensions {
+                srcIpCountry
+              }
+            }
+          }
+        }
+      }
+    `;
+
+    const response = await fetch('https://api.cloudflare.com/client/v4/graphql', {
+      method: 'POST',
+      headers: {
+        'Authorization': `Bearer ${env.DNS_DASHBOARD_API_TOKEN}`,
+        'Content-Type': 'application/json',
+      },
+      body: JSON.stringify({ query }),
+    });
+
+    if (!response.ok) {
+      throw new Error(`GraphQL API error: ${response.status}`);
+    }
+
+    const data = await response.json();
+
+    if (data.errors) {
+      throw new Error(`GraphQL errors: ${data.errors.map(e => e.message).join(', ')}`);
+    }
+
+    const countryCounts = {};
+
+    if (data.data?.viewer?.accounts?.[0]?.gatewayResolverQueriesAdaptiveGroups) {
+      const groups = data.data.viewer.accounts[0].gatewayResolverQueriesAdaptiveGroups;
+
+      groups.forEach(group => {
+        const count = group.count || 0;
+        const rawCountry = group.dimensions?.srcIpCountry || 'Unknown';
+        const country = rawCountry.toUpperCase();
+
+        if (!countryCounts[country]) {
+          countryCounts[country] = 0;
+        }
+        countryCounts[country] += count;
+      });
+    }
+
+    const result = Object.entries(countryCounts)
+      .map(([country, count]) => ({ country, count }))
+      .sort((a, b) => b.count - a.count);
+
+    return new Response(JSON.stringify(result), {
+      headers: { 'Content-Type': 'application/json' },
+    });
+  } catch (error) {
+    console.error('Geography blocked error:', error);
+    return new Response(JSON.stringify({
+      error: error.message,
+      message: 'Failed to fetch geography blocked data'
+    }), {
+      status: 500,
+      headers: { 'Content-Type': 'application/json' },
+    });
+  }
+}
+
+// Handle applications pie chart - shows DNS queries by matched application
+async function handleApplicationsPie(request, env) {
+  try {
+    const url = new URL(request.url);
+    const timeRange = url.searchParams.get('timeRange') || '7d';
+    const { startDate, endDate } = getDateRange(timeRange);
+
+    const query = `
+      query {
+        viewer {
+          accounts(filter: {accountTag: "${env.DNS_DASHBOARD_ACCOUNT_ID}"}) {
+            gatewayResolverByCategoryAdaptiveGroups(
+              filter: {
+                datetime_geq: "${startDate.toISOString()}"
+                datetime_leq: "${endDate.toISOString()}"
+                matchedApplicationName_neq: ""
+              }
+              limit: 10000
+              orderBy: [count_DESC]
+            ) {
+              count
+              dimensions {
+                matchedApplicationName
+              }
+            }
+          }
+        }
+      }
+    `;
+
+    const response = await fetch('https://api.cloudflare.com/client/v4/graphql', {
+      method: 'POST',
+      headers: {
+        'Authorization': `Bearer ${env.DNS_DASHBOARD_API_TOKEN}`,
+        'Content-Type': 'application/json',
+      },
+      body: JSON.stringify({ query }),
+    });
+
+    if (!response.ok) {
+      throw new Error(`GraphQL API error: ${response.status}`);
+    }
+
+    const data = await response.json();
+
+    if (data.errors) {
+      throw new Error(`GraphQL errors: ${data.errors.map(e => e.message).join(', ')}`);
+    }
+
+    const applicationCounts = {};
+    let totalQueries = 0;
+
+    if (data.data?.viewer?.accounts?.[0]?.gatewayResolverByCategoryAdaptiveGroups) {
+      const groups = data.data.viewer.accounts[0].gatewayResolverByCategoryAdaptiveGroups;
+
+      groups.forEach(group => {
+        const count = group.count || 0;
+        let applicationName = group.dimensions?.matchedApplicationName || 'Unknown';
+        // Clean up application name
+        applicationName = applicationName.replace(/[\[\]"]/g, '').replace(/","/g, ', ');
+
+        if (applicationName && applicationName !== 'Unknown') {
+          if (!applicationCounts[applicationName]) {
+            applicationCounts[applicationName] = 0;
+          }
+          applicationCounts[applicationName] += count;
+          totalQueries += count;
+        }
+      });
+    }
+
+    const result = Object.entries(applicationCounts)
+      .map(([application, count]) => ({
+        application,
+        count,
+        percent: totalQueries > 0 ? ((count / totalQueries) * 100).toFixed(2) : '0.00'
+      }))
+      .sort((a, b) => b.count - a.count)
+      .slice(0, 20);
+
+    return new Response(JSON.stringify(result), {
+      headers: { 'Content-Type': 'application/json' },
+    });
+  } catch (error) {
+    console.error('Applications pie error:', error);
+    return new Response(JSON.stringify({
+      error: error.message,
+      message: 'Failed to fetch applications data'
+    }), {
+      status: 500,
+      headers: { 'Content-Type': 'application/json' },
+    });
+  }
+}
+
+// Handle category queries - shows individual queries for a specific category
+async function handleCategoryQueries(request, env) {
+  try {
+    const url = new URL(request.url);
+    const categoryId = url.searchParams.get('categoryId');
+    const type = url.searchParams.get('type') || 'all';
+    const timeRange = url.searchParams.get('timeRange') || '7d';
+    const { startDate, endDate } = getDateRange(timeRange);
+
+    if (!categoryId) {
+      return new Response(JSON.stringify({ error: 'Missing categoryId parameter' }), {
+        status: 400,
+        headers: { 'Content-Type': 'application/json' },
+      });
+    }
+
+    let resolverDecisionFilter = '';
+    if (type === 'blocked') {
+      resolverDecisionFilter = 'resolverDecision_in: [2,3,6,9]';
+    } else if (type === 'allowed') {
+      resolverDecisionFilter = 'resolverDecision_in: [1,4,5,10]';
+    }
+
+    const query = `
+      query {
+        viewer {
+          accounts(filter: {accountTag: "${env.DNS_DASHBOARD_ACCOUNT_ID}"}) {
+            gatewayResolverQueriesAdaptiveGroups(
+              filter: {
+                datetime_geq: "${startDate.toISOString()}"
+                datetime_leq: "${endDate.toISOString()}"
+                ${resolverDecisionFilter}
+              }
+              limit: 10000
+              orderBy: [count_DESC]
+            ) {
+              count
+              dimensions {
+                queryName
+                categoryIds
+                policyName
+              }
+            }
+          }
+        }
+      }
+    `;
+
+    const response = await fetch('https://api.cloudflare.com/client/v4/graphql', {
+      method: 'POST',
+      headers: {
+        'Authorization': `Bearer ${env.DNS_DASHBOARD_API_TOKEN}`,
+        'Content-Type': 'application/json',
+      },
+      body: JSON.stringify({ query }),
+    });
+
+    if (!response.ok) {
+      throw new Error(`GraphQL API error: ${response.status}`);
+    }
+
+    const data = await response.json();
+
+    if (data.errors) {
+      throw new Error(`GraphQL errors: ${data.errors.map(e => e.message).join(', ')}`);
+    }
+
+    const queryCounts = {};
+
+    if (data.data?.viewer?.accounts?.[0]?.gatewayResolverQueriesAdaptiveGroups) {
+      const groups = data.data.viewer.accounts[0].gatewayResolverQueriesAdaptiveGroups;
+
+      groups.forEach(group => {
+        const count = group.count || 0;
+        const queryName = group.dimensions?.queryName || 'Unknown';
+        const categoryIds = group.dimensions?.categoryIds || '';
+        const policyName = group.dimensions?.policyName || '';
+
+        // Check if this query belongs to the requested category
+        if (categoryIds && categoryIds.includes(categoryId)) {
+          if (!queryCounts[queryName]) {
+            queryCounts[queryName] = { count: 0, policyName };
+          }
+          queryCounts[queryName].count += count;
+        }
+      });
+    }
+
+    const result = Object.entries(queryCounts)
+      .map(([domain, info]) => ({
+        domain,
+        count: info.count,
+        policyName: info.policyName || 'N/A'
+      }))
+      .sort((a, b) => b.count - a.count)
+      .slice(0, 50);
+
+    return new Response(JSON.stringify(result), {
+      headers: { 'Content-Type': 'application/json' },
+    });
+  } catch (error) {
+    console.error('Category queries error:', error);
+    return new Response(JSON.stringify({
+      error: error.message,
+      message: 'Failed to fetch category queries'
+    }), {
+      status: 500,
+      headers: { 'Content-Type': 'application/json' },
+    });
+  }
+}
+
+// Handle newly observed domains - queries to new/newly seen domains (category 169 or 177)
+async function handleNewlyObserved(request, env) {
+  try {
+    const url = new URL(request.url);
+    const timeRange = url.searchParams.get('timeRange') || '7d';
+    const { startDate, endDate } = getDateRange(timeRange);
+
+    // Category 169 = New Domains, Category 177 = Newly Seen Domains
+    const query = `
+      query {
+        viewer {
+          accounts(filter: {accountTag: "${env.DNS_DASHBOARD_ACCOUNT_ID}"}) {
+            gatewayResolverQueriesAdaptiveGroups(
+              filter: {
+                datetime_geq: "${startDate.toISOString()}"
+                datetime_leq: "${endDate.toISOString()}"
+              }
+              limit: 10000
+              orderBy: [count_DESC]
+            ) {
+              count
+              dimensions {
+                queryName
+                categoryIds
+              }
+            }
+          }
+        }
+      }
+    `;
+
+    const response = await fetch('https://api.cloudflare.com/client/v4/graphql', {
+      method: 'POST',
+      headers: {
+        'Authorization': `Bearer ${env.DNS_DASHBOARD_API_TOKEN}`,
+        'Content-Type': 'application/json',
+      },
+      body: JSON.stringify({ query }),
+    });
+
+    if (!response.ok) {
+      throw new Error(`GraphQL API error: ${response.status}`);
+    }
+
+    const data = await response.json();
+
+    if (data.errors) {
+      throw new Error(`GraphQL errors: ${data.errors.map(e => e.message).join(', ')}`);
+    }
+
+    const queryCounts = {};
+
+    if (data.data?.viewer?.accounts?.[0]?.gatewayResolverQueriesAdaptiveGroups) {
+      const groups = data.data.viewer.accounts[0].gatewayResolverQueriesAdaptiveGroups;
+
+      groups.forEach(group => {
+        const count = group.count || 0;
+        const queryName = group.dimensions?.queryName || 'Unknown';
+        const categoryIds = group.dimensions?.categoryIds || '';
+
+        // Check if this query belongs to New Domains (169) or Newly Seen Domains (177)
+        if (categoryIds && (categoryIds.includes('169') || categoryIds.includes('177'))) {
+          if (!queryCounts[queryName]) {
+            queryCounts[queryName] = 0;
+          }
+          queryCounts[queryName] += count;
+        }
+      });
+    }
+
+    const result = Object.entries(queryCounts)
+      .map(([query, count]) => ({ query, count }))
+      .sort((a, b) => b.count - a.count)
+      .slice(0, 20);
+
+    return new Response(JSON.stringify(result), {
+      headers: { 'Content-Type': 'application/json' },
+    });
+  } catch (error) {
+    console.error('Newly observed error:', error);
+    return new Response(JSON.stringify({
+      error: error.message,
+      message: 'Failed to fetch newly observed domains'
+    }), {
+      status: 500,
+      headers: { 'Content-Type': 'application/json' },
+    });
+  }
+}
+
+// Handle blocked domains - top 20 domains that were blocked
+async function handleBlockedDomains(request, env) {
+  try {
+    const url = new URL(request.url);
+    const timeRange = url.searchParams.get('timeRange') || '7d';
+    const { startDate, endDate } = getDateRange(timeRange);
+
+    const query = `
+      query {
+        viewer {
+          accounts(filter: {accountTag: "${env.DNS_DASHBOARD_ACCOUNT_ID}"}) {
+            gatewayResolverQueriesAdaptiveGroups(
+              filter: {
+                datetime_geq: "${startDate.toISOString()}"
+                datetime_leq: "${endDate.toISOString()}"
+                resolverDecision_in: [2,3,6,9]
+              }
+              limit: 10000
+              orderBy: [count_DESC]
+            ) {
+              count
+              dimensions {
+                queryName
+              }
+            }
+          }
+        }
+      }
+    `;
+
+    const response = await fetch('https://api.cloudflare.com/client/v4/graphql', {
+      method: 'POST',
+      headers: {
+        'Authorization': `Bearer ${env.DNS_DASHBOARD_API_TOKEN}`,
+        'Content-Type': 'application/json',
+      },
+      body: JSON.stringify({ query }),
+    });
+
+    if (!response.ok) {
+      throw new Error(`GraphQL API error: ${response.status}`);
+    }
+
+    const data = await response.json();
+
+    if (data.errors) {
+      throw new Error(`GraphQL errors: ${data.errors.map(e => e.message).join(', ')}`);
+    }
+
+    const queryCounts = {};
+
+    if (data.data?.viewer?.accounts?.[0]?.gatewayResolverQueriesAdaptiveGroups) {
+      const groups = data.data.viewer.accounts[0].gatewayResolverQueriesAdaptiveGroups;
+
+      groups.forEach(group => {
+        const count = group.count || 0;
+        const queryName = group.dimensions?.queryName || 'Unknown';
+
+        if (!queryCounts[queryName]) {
+          queryCounts[queryName] = 0;
+        }
+        queryCounts[queryName] += count;
+      });
+    }
+
+    const result = Object.entries(queryCounts)
+      .map(([query, count]) => ({ query, count }))
+      .sort((a, b) => b.count - a.count)
+      .slice(0, 20);
+
+    return new Response(JSON.stringify(result), {
+      headers: { 'Content-Type': 'application/json' },
+    });
+  } catch (error) {
+    console.error('Blocked domains error:', error);
+    return new Response(JSON.stringify({
+      error: error.message,
+      message: 'Failed to fetch blocked domains'
+    }), {
+      status: 500,
+      headers: { 'Content-Type': 'application/json' },
+    });
+  }
+}
+
