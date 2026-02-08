@@ -592,7 +592,7 @@
                                 <h2 style="margin: 0;">Top 20 Blocked Categories</h2>
                                 <button onclick="showQueryInfo('blocked')" class="info-btn" title="View GraphQL Query">i</button>
                             </div>
-                            <div class="chart-container" style="height: 450px;">
+                            <div id="blockedChartContainer" class="chart-container" style="height: 450px;">
                                 <canvas id="blockedChart"></canvas>
                             </div>
                         </div>
@@ -624,7 +624,7 @@
                                 <h2 style="margin: 0;">Top 20 Blocked Domains</h2>
                                 <button onclick="showQueryInfo('blockedDomains')" class="info-btn" title="View GraphQL Query">i</button>
                             </div>
-                            <div class="chart-container" style="height: 250px;">
+                            <div id="blockedDomainsChartContainer" class="chart-container" style="height: 250px;">
                                 <canvas id="blockedDomainsChart"></canvas>
                             </div>
                         </div>
@@ -957,9 +957,7 @@
         function renderBlockedChart(data) {
             if (blockedChart) blockedChart.destroy();
 
-            const canvas = document.getElementById('blockedChart');
-            if (!canvas) return;
-            const container = canvas.parentElement;
+            const container = document.getElementById('blockedChartContainer');
             if (!container) return;
 
             container.innerHTML = '<canvas id="blockedChart"></canvas>';
@@ -1137,9 +1135,7 @@
         function renderBlockedDomainsChart(data) {
             if (blockedDomainsChart) blockedDomainsChart.destroy();
 
-            const canvas = document.getElementById('blockedDomainsChart');
-            if (!canvas) return;
-            const container = canvas.parentElement;
+            const container = document.getElementById('blockedDomainsChartContainer');
             if (!container) return;
 
             container.innerHTML = '<canvas id="blockedDomainsChart"></canvas>';
