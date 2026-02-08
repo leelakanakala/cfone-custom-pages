@@ -1029,6 +1029,7 @@
             if (!newCanvas) return;
             const ctx = newCanvas.getContext('2d');
 
+            const chartData = data;
             queriesChart = new Chart(ctx, {
                 type: 'bar',
                 data: {
@@ -1061,7 +1062,17 @@
                             mode: 'index', 
                             intersect: false,
                             titleFont: { family: "'Roboto Mono', monospace" },
-                            bodyFont: { family: "'Roboto Mono', monospace" }
+                            bodyFont: { family: "'Roboto Mono', monospace" },
+                            callbacks: {
+                                afterBody: function(context) {
+                                    const index = context[0].dataIndex;
+                                    const categories = chartData[index]?.categories || [];
+                                    if (categories.length > 0) {
+                                        return ['', 'Categories: ' + categories.join(', ')];
+                                    }
+                                    return [];
+                                }
+                            }
                         }
                     }
                 }
@@ -1093,6 +1104,7 @@
             if (!newCanvas) return;
             const ctx = newCanvas.getContext('2d');
 
+            const chartData = data;
             newlyObservedChart = new Chart(ctx, {
                 type: 'bar',
                 data: {
@@ -1125,7 +1137,17 @@
                             mode: 'index', 
                             intersect: false,
                             titleFont: { family: "'Roboto Mono', monospace" },
-                            bodyFont: { family: "'Roboto Mono', monospace" }
+                            bodyFont: { family: "'Roboto Mono', monospace" },
+                            callbacks: {
+                                afterBody: function(context) {
+                                    const index = context[0].dataIndex;
+                                    const categories = chartData[index]?.categories || [];
+                                    if (categories.length > 0) {
+                                        return ['', 'Categories: ' + categories.join(', ')];
+                                    }
+                                    return [];
+                                }
+                            }
                         }
                     }
                 }
@@ -1155,6 +1177,7 @@
             if (!newCanvas) return;
             const ctx = newCanvas.getContext('2d');
 
+            const chartData = data;
             blockedDomainsChart = new Chart(ctx, {
                 type: 'bar',
                 data: {
@@ -1187,7 +1210,17 @@
                             mode: 'index', 
                             intersect: false,
                             titleFont: { family: "'Roboto Mono', monospace" },
-                            bodyFont: { family: "'Roboto Mono', monospace" }
+                            bodyFont: { family: "'Roboto Mono', monospace" },
+                            callbacks: {
+                                afterBody: function(context) {
+                                    const index = context[0].dataIndex;
+                                    const categories = chartData[index]?.categories || [];
+                                    if (categories.length > 0) {
+                                        return ['', 'Categories: ' + categories.join(', ')];
+                                    }
+                                    return [];
+                                }
+                            }
                         }
                     }
                 }

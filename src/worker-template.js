@@ -835,6 +835,7 @@ async function handleTopQueries(request, env) {
               count
               dimensions {
                 queryName
+                categoryIds
               }
             }
           }
@@ -861,7 +862,7 @@ async function handleTopQueries(request, env) {
       throw new Error(`GraphQL errors: ${data.errors.map(e => e.message).join(', ')}`);
     }
 
-    const queryCounts = {};
+    const queryData = {};
 
     if (data.data?.viewer?.accounts?.[0]?.gatewayResolverQueriesAdaptiveGroups) {
       const groups = data.data.viewer.accounts[0].gatewayResolverQueriesAdaptiveGroups;
@@ -869,16 +870,30 @@ async function handleTopQueries(request, env) {
       groups.forEach(group => {
         const count = group.count || 0;
         const queryName = group.dimensions?.queryName || 'Unknown';
+        const categoryIds = group.dimensions?.categoryIds || '';
 
-        if (!queryCounts[queryName]) {
-          queryCounts[queryName] = 0;
+        if (!queryData[queryName]) {
+          queryData[queryName] = { count: 0, categories: new Set() };
         }
-        queryCounts[queryName] += count;
+        queryData[queryName].count += count;
+        
+        if (categoryIds) {
+          const cleanedIds = categoryIds.replace(/[\[\]]/g, '');
+          const ids = cleanedIds.split(',').map(id => id.trim()).filter(id => id);
+          ids.forEach(id => {
+            const categoryName = CATEGORIES[id] || `Category ${id}`;
+            queryData[queryName].categories.add(categoryName);
+          });
+        }
       });
     }
 
-    const topQueries = Object.entries(queryCounts)
-      .map(([query, count]) => ({ query, count }))
+    const topQueries = Object.entries(queryData)
+      .map(([query, data]) => ({ 
+        query, 
+        count: data.count, 
+        categories: Array.from(data.categories).slice(0, 5)
+      }))
       .sort((a, b) => b.count - a.count)
       .slice(0, 20);
 
@@ -1985,15 +2000,26 @@ async function handleNewlyObserved(request, env) {
         // Check if this query belongs to New Domains (169) or Newly Seen Domains (177)
         if (categoryIds && (categoryIds.includes('169') || categoryIds.includes('177'))) {
           if (!queryCounts[queryName]) {
-            queryCounts[queryName] = 0;
+            queryCounts[queryName] = { count: 0, categories: new Set() };
           }
-          queryCounts[queryName] += count;
+          queryCounts[queryName].count += count;
+          
+          const cleanedIds = categoryIds.replace(/[\[\]]/g, '');
+          const ids = cleanedIds.split(',').map(id => id.trim()).filter(id => id);
+          ids.forEach(id => {
+            const categoryName = CATEGORIES[id] || `Category ${id}`;
+            queryCounts[queryName].categories.add(categoryName);
+          });
         }
       });
     }
 
     const result = Object.entries(queryCounts)
-      .map(([query, count]) => ({ query, count }))
+      .map(([query, data]) => ({ 
+        query, 
+        count: data.count, 
+        categories: Array.from(data.categories).slice(0, 5)
+      }))
       .sort((a, b) => b.count - a.count)
       .slice(0, 20);
 
@@ -2035,6 +2061,7 @@ async function handleBlockedDomains(request, env) {
               count
               dimensions {
                 queryName
+                categoryIds
               }
             }
           }
@@ -2061,7 +2088,7 @@ async function handleBlockedDomains(request, env) {
       throw new Error(`GraphQL errors: ${data.errors.map(e => e.message).join(', ')}`);
     }
 
-    const queryCounts = {};
+    const queryData = {};
 
     if (data.data?.viewer?.accounts?.[0]?.gatewayResolverQueriesAdaptiveGroups) {
       const groups = data.data.viewer.accounts[0].gatewayResolverQueriesAdaptiveGroups;
@@ -2069,16 +2096,30 @@ async function handleBlockedDomains(request, env) {
       groups.forEach(group => {
         const count = group.count || 0;
         const queryName = group.dimensions?.queryName || 'Unknown';
+        const categoryIds = group.dimensions?.categoryIds || '';
 
-        if (!queryCounts[queryName]) {
-          queryCounts[queryName] = 0;
+        if (!queryData[queryName]) {
+          queryData[queryName] = { count: 0, categories: new Set() };
         }
-        queryCounts[queryName] += count;
+        queryData[queryName].count += count;
+        
+        if (categoryIds) {
+          const cleanedIds = categoryIds.replace(/[\[\]]/g, '');
+          const ids = cleanedIds.split(',').map(id => id.trim()).filter(id => id);
+          ids.forEach(id => {
+            const categoryName = CATEGORIES[id] || `Category ${id}`;
+            queryData[queryName].categories.add(categoryName);
+          });
+        }
       });
     }
 
-    const result = Object.entries(queryCounts)
-      .map(([query, count]) => ({ query, count }))
+    const result = Object.entries(queryData)
+      .map(([query, data]) => ({ 
+        query, 
+        count: data.count, 
+        categories: Array.from(data.categories).slice(0, 5)
+      }))
       .sort((a, b) => b.count - a.count)
       .slice(0, 20);
 
