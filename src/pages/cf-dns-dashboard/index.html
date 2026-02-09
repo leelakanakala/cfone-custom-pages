@@ -551,8 +551,9 @@
                     <span style="margin-left: 8px; color: var(--accent-success);">● Live</span>
                 </div>
                 <div class="card" style="margin-bottom: 16px;">
-                    <div style="margin-bottom: 10px;">
+                    <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 10px;">
                         <h2 style="margin: 0;">📈 DNS Query Timeline</h2>
+                        <span id="timelinePeriod" style="font-family: 'Roboto Mono', monospace; font-size: 0.75rem; color: var(--text-secondary);">Last 7 Days</span>
                     </div>
                     <div class="chart-container" style="height: 180px;">
                         <canvas id="timelineChart"></canvas>
@@ -845,6 +846,19 @@
         }
 
         function loadDashboardData(timeRange = '7d') {
+            // Update timeline period indicator
+            const periodLabels = {
+                '5m': 'Live - Last 5 Minutes',
+                '1h': 'Last 1 Hour',
+                '24h': 'Last 24 Hours',
+                '7d': 'Last 7 Days',
+                '30d': 'Last 30 Days'
+            };
+            const timelinePeriod = document.getElementById('timelinePeriod');
+            if (timelinePeriod) {
+                timelinePeriod.textContent = periodLabels[timeRange] || timeRange;
+            }
+
             document.getElementById('totalQueries').textContent = '-';
             document.getElementById('allowedQueries').textContent = '-';
             document.getElementById('blockedQueries').textContent = '-';
@@ -2336,20 +2350,29 @@
         async function fetchLiveLogs() {
             try {
                 let url = '/dns/api/live-logs';
-                if (lastLogTimestamp) {
-                    url += '?since=' + encodeURIComponent(lastLogTimestamp);
-                }
+                // Don't use since parameter initially to get all recent logs
                 
                 const response = await fetch(url);
+                if (!response.ok) {
+                    console.error('Live logs API error:', response.status);
+                    return;
+                }
+                
                 const data = await response.json();
+                
+                if (data.error) {
+                    console.error('Live logs API returned error:', data.error);
+                    return;
+                }
                 
                 if (data.logs && data.logs.length > 0) {
                     // Add new logs to the beginning (newest first)
                     const newLogs = data.logs.filter(log => {
-                        // Avoid duplicates based on domain + timestamp
+                        // Avoid duplicates based on domain + timestamp + action
                         return !allLogs.some(existing => 
                             existing.domain === log.domain && 
-                            existing.timestamp === log.timestamp
+                            existing.timestamp === log.timestamp &&
+                            existing.action === log.action
                         );
                     });
                     

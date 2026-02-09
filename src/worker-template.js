@@ -2151,7 +2151,7 @@ async function handleLiveLogs(request, env) {
     const since = url.searchParams.get('since'); // ISO timestamp to fetch logs after
     
     const now = new Date();
-    const startDate = since ? new Date(since) : new Date(now.getTime() - 60000); // Default: last 60 seconds
+    const startDate = since ? new Date(since) : new Date(now.getTime() - 300000); // Default: last 5 minutes
     
     const query = `
       query {
