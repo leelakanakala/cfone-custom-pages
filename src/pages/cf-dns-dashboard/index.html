@@ -132,6 +132,34 @@
         border-color: var(--accent-primary);
     }
 
+    .live-btn {
+        display: flex;
+        align-items: center;
+        gap: 6px;
+    }
+
+    .live-btn.active {
+        background: var(--accent-error);
+        border-color: var(--accent-error);
+    }
+
+    .live-indicator {
+        width: 8px;
+        height: 8px;
+        border-radius: 50%;
+        background: var(--text-tertiary);
+    }
+
+    .live-btn.active .live-indicator {
+        background: white;
+        animation: pulse 1.5s ease-in-out infinite;
+    }
+
+    @keyframes pulse {
+        0%, 100% { opacity: 1; }
+        50% { opacity: 0.4; }
+    }
+
     .metric-grid {
         display: grid;
         grid-template-columns: repeat(3, 1fr);
@@ -508,11 +536,19 @@
             <div style="flex: 1; min-width: 0;">
                 <div style="display: flex; justify-content: center; margin-bottom: 12px;">
                     <div class="controls" style="gap: 8px;">
+                        <button class="btn live-btn" onclick="toggleLiveMode()" id="liveBtn">
+                            <span class="live-indicator" id="liveIndicator"></span>
+                            <span id="liveBtnText">Live</span>
+                        </button>
                         <button class="btn" onclick="changeTimeRange('1h')">Last 1 Hour</button>
                         <button class="btn" onclick="changeTimeRange('24h')">Last 24 Hours</button>
                         <button class="btn active" onclick="changeTimeRange('7d')">Last 7 Days</button>
                         <button class="btn" onclick="changeTimeRange('30d')">Last 30 Days</button>
                     </div>
+                </div>
+                <div id="liveStatus" style="display: none; text-align: center; margin-bottom: 12px; font-family: 'Roboto Mono', monospace; font-size: 0.8rem; color: var(--text-secondary);">
+                    <span id="liveStatusText">Refreshing in <span id="countdown">10</span>s</span>
+                    <span style="margin-left: 8px; color: var(--accent-success);">● Live</span>
                 </div>
                 <div class="card" style="margin-bottom: 16px;">
                     <div style="margin-bottom: 10px;">
@@ -669,8 +705,91 @@
         let newlyObservedChart = null;
         let blockedDomainsChart = null;
         let currentTimeRange = '7d';
+        let isLiveMode = false;
+        let liveInterval = null;
+        let countdownInterval = null;
+        let countdownValue = 10;
+        const LIVE_REFRESH_SECONDS = 10;
+
+        function toggleLiveMode() {
+            isLiveMode = !isLiveMode;
+            const liveBtn = document.getElementById('liveBtn');
+            const liveStatus = document.getElementById('liveStatus');
+            const liveBtnText = document.getElementById('liveBtnText');
+            
+            if (isLiveMode) {
+                // Enable live mode
+                liveBtn.classList.add('active');
+                liveBtnText.textContent = 'Stop';
+                liveStatus.style.display = 'block';
+                
+                // Remove active from other buttons
+                document.querySelectorAll('.controls .btn:not(.live-btn)').forEach(btn => {
+                    btn.classList.remove('active');
+                });
+                
+                // Load data immediately with 5-minute range
+                currentTimeRange = '5m';
+                loadDashboardData('5m');
+                
+                // Start countdown
+                countdownValue = LIVE_REFRESH_SECONDS;
+                updateCountdown();
+                countdownInterval = setInterval(() => {
+                    countdownValue--;
+                    updateCountdown();
+                    if (countdownValue <= 0) {
+                        countdownValue = LIVE_REFRESH_SECONDS;
+                        loadDashboardData('5m');
+                    }
+                }, 1000);
+            } else {
+                // Disable live mode
+                liveBtn.classList.remove('active');
+                liveBtnText.textContent = 'Live';
+                liveStatus.style.display = 'none';
+                
+                // Clear intervals
+                if (countdownInterval) {
+                    clearInterval(countdownInterval);
+                    countdownInterval = null;
+                }
+                
+                // Reset to 7d view
+                currentTimeRange = '7d';
+                document.querySelectorAll('.controls .btn').forEach(btn => {
+                    btn.classList.remove('active');
+                    if (btn.textContent.includes('7 Days')) {
+                        btn.classList.add('active');
+                    }
+                });
+                loadDashboardData('7d');
+            }
+        }
+
+        function updateCountdown() {
+            const countdownEl = document.getElementById('countdown');
+            if (countdownEl) {
+                countdownEl.textContent = countdownValue;
+            }
+        }
 
         function changeTimeRange(range) {
+            // Stop live mode if active
+            if (isLiveMode) {
+                isLiveMode = false;
+                const liveBtn = document.getElementById('liveBtn');
+                const liveStatus = document.getElementById('liveStatus');
+                const liveBtnText = document.getElementById('liveBtnText');
+                liveBtn.classList.remove('active');
+                liveBtnText.textContent = 'Live';
+                liveStatus.style.display = 'none';
+                if (countdownInterval) {
+                    clearInterval(countdownInterval);
+                    countdownInterval = null;
+                }
+            }
+            
             currentTimeRange = range;
             
             document.querySelectorAll('.controls .btn').forEach(btn => {

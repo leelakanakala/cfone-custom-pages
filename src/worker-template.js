@@ -397,7 +397,11 @@ function serveDNSDashboardPage(url) {
 function getDateRange(timeRange) {
   const now = new Date();
   
-  if (timeRange === '1h') {
+  if (timeRange === '5m') {
+    const startDate = new Date(now);
+    startDate.setMinutes(now.getMinutes() - 5);
+    return { startDate, endDate: now, excludeToday: false };
+  } else if (timeRange === '1h') {
     const startDate = new Date(now);
     startDate.setHours(now.getHours() - 1);
     return { startDate, endDate: now, excludeToday: false };
