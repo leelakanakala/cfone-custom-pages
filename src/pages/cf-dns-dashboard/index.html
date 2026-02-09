@@ -575,10 +575,10 @@
                             <thead style="position: sticky; top: 0; background: var(--bg-primary); z-index: 1;">
                                 <tr style="border-bottom: 1px solid var(--border-primary);">
                                     <th style="text-align: left; padding: 8px 12px; color: var(--text-secondary); font-weight: 500;">Time</th>
+                                    <th style="text-align: right; padding: 8px 12px; color: var(--text-secondary); font-weight: 500;">Query Count</th>
                                     <th style="text-align: left; padding: 8px 12px; color: var(--text-secondary); font-weight: 500;">Domain</th>
                                     <th style="text-align: left; padding: 8px 12px; color: var(--text-secondary); font-weight: 500;">Category</th>
                                     <th style="text-align: left; padding: 8px 12px; color: var(--text-secondary); font-weight: 500;">Policy</th>
-                                    <th style="text-align: right; padding: 8px 12px; color: var(--text-secondary); font-weight: 500;">Count</th>
                                     <th style="text-align: left; padding: 8px 12px; color: var(--text-secondary); font-weight: 500;">Action</th>
                                 </tr>
                             </thead>
@@ -2414,9 +2414,13 @@
                     
                     if (newLogs.length > 0) {
                         allLogs = [...newLogs, ...allLogs].slice(0, MAX_LOGS);
-                        renderLogs();
                     }
                 }
+                
+                // Filter out logs older than 5 minutes
+                const fiveMinutesAgo = new Date(Date.now() - 5 * 60 * 1000);
+                allLogs = allLogs.filter(log => new Date(log.timestamp) >= fiveMinutesAgo);
+                renderLogs();
                 
                 if (data.serverTime) {
                     lastLogTimestamp = data.serverTime;
@@ -2451,10 +2455,10 @@
                 
                 return `<tr style="border-bottom: 1px solid var(--border-secondary); background: ${rowBg};">
                     <td style="padding: 8px 12px; white-space: nowrap;">${time}</td>
+                    <td style="padding: 8px 12px; text-align: right;">${count}</td>
                     <td style="padding: 8px 12px; max-width: 200px; overflow: hidden; text-overflow: ellipsis;" title="${log.domain}">${log.domain}</td>
                     <td style="padding: 8px 12px; color: var(--text-secondary); max-width: 120px; overflow: hidden; text-overflow: ellipsis;" title="${categories}">${categories}</td>
                     <td style="padding: 8px 12px; color: var(--text-secondary); max-width: 120px; overflow: hidden; text-overflow: ellipsis;" title="${policy}">${policy}</td>
-                    <td style="padding: 8px 12px; text-align: right;">${count}</td>
                     <td style="padding: 8px 12px; color: ${actionColor}; font-weight: 500;">${log.action}</td>
                 </tr>`;
             }).join('');
