@@ -576,6 +576,7 @@
                                     <th style="text-align: left; padding: 8px 12px; color: var(--text-secondary); font-weight: 500;">Time</th>
                                     <th style="text-align: left; padding: 8px 12px; color: var(--text-secondary); font-weight: 500;">Domain</th>
                                     <th style="text-align: left; padding: 8px 12px; color: var(--text-secondary); font-weight: 500;">Category</th>
+                                    <th style="text-align: left; padding: 8px 12px; color: var(--text-secondary); font-weight: 500;">Policy</th>
                                     <th style="text-align: left; padding: 8px 12px; color: var(--text-secondary); font-weight: 500;">Action</th>
                                 </tr>
                             </thead>
@@ -965,7 +966,29 @@
             const totalQueries = [];
             const now = new Date();
 
-            if (timeRange === '1h') {
+            if (timeRange === '5m') {
+                // Generate last 5 minutes in 1-minute intervals (5 points)
+                for (let i = 4; i >= 0; i--) {
+                    const minuteDate = new Date(now);
+                    minuteDate.setMinutes(now.getMinutes() - i, 0, 0);
+                    
+                    // Find matching data point (compare by minute)
+                    let found = 0;
+                    Object.keys(dataMap).forEach(key => {
+                        const dataDate = new Date(key);
+                        if (dataDate.getFullYear() === minuteDate.getFullYear() &&
+                            dataDate.getMonth() === minuteDate.getMonth() &&
+                            dataDate.getDate() === minuteDate.getDate() &&
+                            dataDate.getHours() === minuteDate.getHours() &&
+                            dataDate.getMinutes() === minuteDate.getMinutes()) {
+                            found = dataMap[key];
+                        }
+                    });
+                    
+                    labels.push(minuteDate.toLocaleTimeString('en-US', { hour: 'numeric', minute: '2-digit', hour12: true }));
+                    totalQueries.push(found);
+                }
+            } else if (timeRange === '1h') {
                 // Generate last 60 minutes in 5-minute intervals (12 points)
                 for (let i = 11; i >= 0; i--) {
                     const minuteDate = new Date(now);
@@ -2408,13 +2431,15 @@
             tbody.innerHTML = allLogs.map(log => {
                 const time = new Date(log.timestamp).toLocaleTimeString();
                 const categories = log.categories.length > 0 ? log.categories.join(', ') : '-';
+                const policy = log.policy || '-';
                 const actionColor = log.isBlocked ? 'var(--accent-error)' : 'var(--accent-success)';
                 const rowBg = log.isBlocked ? 'rgba(220, 38, 38, 0.05)' : '';
                 
                 return `<tr style="border-bottom: 1px solid var(--border-secondary); background: ${rowBg};">
                     <td style="padding: 8px 12px; white-space: nowrap;">${time}</td>
-                    <td style="padding: 8px 12px; max-width: 300px; overflow: hidden; text-overflow: ellipsis;" title="${log.domain}">${log.domain}</td>
-                    <td style="padding: 8px 12px; color: var(--text-secondary); max-width: 200px; overflow: hidden; text-overflow: ellipsis;" title="${categories}">${categories}</td>
+                    <td style="padding: 8px 12px; max-width: 250px; overflow: hidden; text-overflow: ellipsis;" title="${log.domain}">${log.domain}</td>
+                    <td style="padding: 8px 12px; color: var(--text-secondary); max-width: 150px; overflow: hidden; text-overflow: ellipsis;" title="${categories}">${categories}</td>
+                    <td style="padding: 8px 12px; color: var(--text-secondary); max-width: 150px; overflow: hidden; text-overflow: ellipsis;" title="${policy}">${policy}</td>
                     <td style="padding: 8px 12px; color: ${actionColor}; font-weight: 500;">${log.action}</td>
                 </tr>`;
             }).join('');

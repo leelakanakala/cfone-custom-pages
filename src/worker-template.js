@@ -2171,6 +2171,7 @@ async function handleLiveLogs(request, env) {
                 categoryIds
                 resolverDecision
                 datetimeMinute
+                matchedRuleName
               }
             }
           }
@@ -2220,6 +2221,7 @@ async function handleLiveLogs(request, env) {
         const categoryIds = group.dimensions?.categoryIds || '';
         const resolverDecision = group.dimensions?.resolverDecision;
         const datetime = group.dimensions?.datetimeMinute || now.toISOString();
+        const matchedRuleName = group.dimensions?.matchedRuleName || '';
         const count = group.count || 1;
 
         // Parse categories
@@ -2240,6 +2242,7 @@ async function handleLiveLogs(request, env) {
           categories: categories,
           action: action,
           isBlocked: isBlocked,
+          policy: matchedRuleName,
           count: count
         });
       });
