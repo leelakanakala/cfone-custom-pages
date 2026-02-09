@@ -2484,7 +2484,21 @@
             }
             
             noLogsMessage.style.display = 'none';
-            logCount.textContent = allLogs.length + ' logs';
+            const totalQueries = allLogs.reduce((sum, log) => sum + (log.count || 1), 0);
+            logCount.textContent = totalQueries + ' queries (' + allLogs.length + ' rows)';
+            
+            // Update the total queries metric in live mode to match live logs
+            if (isLiveMode) {
+                const allowedCount = allLogs.filter(l => !l.isBlocked).reduce((sum, l) => sum + (l.count || 1), 0);
+                const blockedCount = allLogs.filter(l => l.isBlocked).reduce((sum, l) => sum + (l.count || 1), 0);
+                document.getElementById('totalQueries').textContent = totalQueries.toLocaleString();
+                document.getElementById('allowedQueries').textContent = allowedCount.toLocaleString();
+                document.getElementById('blockedQueries').textContent = blockedCount.toLocaleString();
+                const allowedPercent = totalQueries > 0 ? ((allowedCount / totalQueries) * 100).toFixed(1) : 0;
+                const blockedPercent = totalQueries > 0 ? ((blockedCount / totalQueries) * 100).toFixed(1) : 0;
+                document.getElementById('allowedPercent').textContent = allowedPercent + '% of total';
+                document.getElementById('blockedPercent').textContent = blockedPercent + '% of total';
+            }
             
             tbody.innerHTML = allLogs.map(log => {
                 const time = new Date(log.timestamp).toLocaleTimeString();
