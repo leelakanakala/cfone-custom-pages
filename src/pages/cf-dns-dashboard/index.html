@@ -564,7 +564,10 @@
                 <!-- Live DNS Logs Table - Only visible in Live mode -->
                 <div id="liveLogsContainer" class="card" style="margin-bottom: 16px; display: none;">
                     <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 10px;">
-                        <h2 style="margin: 0;">🔴 Live DNS Logs</h2>
+                        <div style="display: flex; align-items: center; gap: 8px;">
+                            <h2 style="margin: 0;">🔴 Live DNS Logs</h2>
+                            <button onclick="showQueryInfo('liveLogs')" class="info-btn" title="View Information">i</button>
+                        </div>
                         <div style="display: flex; align-items: center; gap: 12px;">
                             <span id="logCount" style="font-family: 'Roboto Mono', monospace; font-size: 0.75rem; color: var(--text-secondary);">0 logs</span>
                             <button onclick="clearLogs()" class="btn" style="padding: 4px 12px; font-size: 0.75rem;">Clear</button>
@@ -2262,6 +2265,44 @@
                         <h4 style="color: var(--text-primary); margin-bottom: 8px;">Data Included:</h4>
                         <p style="color: var(--text-secondary); line-height: 1.6;">
                             The total includes all DNS query types: Allowed, Blocked, Safe Search, Override Applied, and Unknown decisions.
+                        </p>
+                    </div>
+                `;
+                return;
+            }
+
+            // Special handling for live logs info
+            if (chartType === 'liveLogs') {
+                modalTitle.textContent = 'About Live DNS Logs';
+                modalContent.innerHTML = `
+                    <div style="font-family: 'Roboto Mono', monospace;">
+                        <h3 style="color: var(--text-primary); margin-bottom: 12px;">🔴 Understanding Live DNS Logs</h3>
+                        <p style="color: var(--text-secondary); margin-bottom: 16px; line-height: 1.6;">
+                            Live DNS Logs show recent DNS query activity from the last 5 minutes. 
+                            Data refreshes every 10 seconds automatically.
+                        </p>
+                        
+                        <h4 style="color: var(--text-primary); margin-bottom: 8px;">Important Notes:</h4>
+                        <ul style="color: var(--text-secondary); margin-bottom: 16px; padding-left: 20px; line-height: 1.8;">
+                            <li><strong>Data Delay:</strong> Cloudflare analytics has a 2-5 minute delay. Data shown may not include the most recent queries.</li>
+                            <li><strong>Aggregated Data:</strong> Logs are grouped by domain, category, action, and minute. The "Query Count" shows how many queries each row represents.</li>
+                            <li><strong>Limited Results:</strong> Only the top 100 unique query combinations are shown per refresh.</li>
+                        </ul>
+                        
+                        <h4 style="color: var(--text-primary); margin-bottom: 8px;">Column Descriptions:</h4>
+                        <ul style="color: var(--text-secondary); margin-bottom: 16px; padding-left: 20px; line-height: 1.8;">
+                            <li><strong>Time:</strong> The minute when the queries occurred</li>
+                            <li><strong>Query Count:</strong> Number of queries for this domain/action combination</li>
+                            <li><strong>Domain:</strong> The queried domain name</li>
+                            <li><strong>Category:</strong> Content category classification</li>
+                            <li><strong>Policy:</strong> The Gateway policy that matched (if any)</li>
+                            <li><strong>Action:</strong> The resolver decision (Allowed, Blocked, etc.)</li>
+                        </ul>
+                        
+                        <h4 style="color: var(--text-primary); margin-bottom: 8px;">Why Total Queries ≠ Log Rows?</h4>
+                        <p style="color: var(--text-secondary); line-height: 1.6;">
+                            The "Total Queries" stat counts every individual DNS query. The logs table shows aggregated rows - 
+                            if you query google.com 50 times in one minute, it appears as 1 row with Query Count = 50.
                         </p>
                     </div>
                 `;
