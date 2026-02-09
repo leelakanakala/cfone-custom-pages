@@ -531,6 +531,11 @@ async function handle30DayDashboard(request, env) {
     const timeRange = url.searchParams.get('timeRange') || '7d';
     const { startDate, endDate } = getDateRange(timeRange);
 
+    // Use datetimeMinute for 5m timeRange to get per-minute data
+    const useMinute = timeRange === '5m';
+    const datetimeField = useMinute ? 'datetimeMinute' : 'datetimeHour';
+    const orderByField = useMinute ? 'datetimeMinute_ASC' : 'datetimeHour_ASC';
+
     const query = `
       query {
         viewer {
@@ -541,12 +546,12 @@ async function handle30DayDashboard(request, env) {
                 datetime_leq: "${endDate.toISOString()}"
               }
               limit: 10000
-              orderBy: [datetimeHour_ASC]
+              orderBy: [${orderByField}]
             ) {
               count
               dimensions {
                 resolverDecision
-                datetimeHour
+                ${datetimeField}
               }
             }
           }
@@ -581,11 +586,19 @@ async function handle30DayDashboard(request, env) {
       groups.forEach(group => {
         const count = group.count || 0;
         const decision = group.dimensions?.resolverDecision;
-        const datetimeHour = group.dimensions?.datetimeHour;
+        const datetime = useMinute ? group.dimensions?.datetimeMinute : group.dimensions?.datetimeHour;
 
-        if (!datetimeHour) return;
+        if (!datetime) return;
 
-        const dateStr = (timeRange === '1h' || timeRange === '24h') ? datetimeHour : datetimeHour.split('T')[0];
+        // For 5m use full minute timestamp, for 1h/24h use hour, for 7d/30d use date only
+        let dateStr;
+        if (timeRange === '5m') {
+          dateStr = datetime; // Full minute timestamp
+        } else if (timeRange === '1h' || timeRange === '24h') {
+          dateStr = datetime; // Full hour timestamp
+        } else {
+          dateStr = datetime.split('T')[0]; // Date only
+        }
 
         if (!dailyData[dateStr]) {
           dailyData[dateStr] = { 
@@ -2171,7 +2184,7 @@ async function handleLiveLogs(request, env) {
                 categoryIds
                 resolverDecision
                 datetimeMinute
-                matchedRuleName
+                policyName
               }
             }
           }
@@ -2221,7 +2234,7 @@ async function handleLiveLogs(request, env) {
         const categoryIds = group.dimensions?.categoryIds || '';
         const resolverDecision = group.dimensions?.resolverDecision;
         const datetime = group.dimensions?.datetimeMinute || now.toISOString();
-        const matchedRuleName = group.dimensions?.matchedRuleName || '';
+        const policyName = group.dimensions?.policyName || '';
         const count = group.count || 1;
 
         // Parse categories
@@ -2242,7 +2255,7 @@ async function handleLiveLogs(request, env) {
           categories: categories,
           action: action,
           isBlocked: isBlocked,
-          policy: matchedRuleName,
+          policy: policyName,
           count: count
         });
       });
