@@ -2163,7 +2163,7 @@ async function handleLiveLogs(request, env) {
                 datetime_leq: "${now.toISOString()}"
               }
               limit: 100
-              orderBy: [datetime_DESC]
+              orderBy: [datetimeMinute_DESC]
             ) {
               count
               dimensions {
