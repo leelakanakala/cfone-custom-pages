@@ -59,6 +59,8 @@ export default {
       return handleNewlyObserved(request, env);
     } else if (path === '/dns/api/blocked-domains') {
       return handleBlockedDomains(request, env);
+    } else if (path === '/dns/api/live-logs') {
+      return handleLiveLogs(request, env);
     } else if (path === '/') {
       return Response.redirect(url.origin + '/cf-gateway/', 302);
     } else {
@@ -2135,6 +2137,125 @@ async function handleBlockedDomains(request, env) {
     return new Response(JSON.stringify({
       error: error.message,
       message: 'Failed to fetch blocked domains'
+    }), {
+      status: 500,
+      headers: { 'Content-Type': 'application/json' },
+    });
+  }
+}
+
+// Handle live logs - fetch recent individual DNS queries for live view
+async function handleLiveLogs(request, env) {
+  try {
+    const url = new URL(request.url);
+    const since = url.searchParams.get('since'); // ISO timestamp to fetch logs after
+    
+    const now = new Date();
+    const startDate = since ? new Date(since) : new Date(now.getTime() - 60000); // Default: last 60 seconds
+    
+    const query = `
+      query {
+        viewer {
+          accounts(filter: {accountTag: "${env.DNS_DASHBOARD_ACCOUNT_ID}"}) {
+            gatewayResolverQueriesAdaptiveGroups(
+              filter: {
+                datetime_geq: "${startDate.toISOString()}"
+                datetime_leq: "${now.toISOString()}"
+              }
+              limit: 100
+              orderBy: [datetime_DESC]
+            ) {
+              count
+              dimensions {
+                queryName
+                categoryIds
+                resolverDecision
+                datetimeMinute
+              }
+            }
+          }
+        }
+      }
+    `;
+
+    const response = await fetch('https://api.cloudflare.com/client/v4/graphql', {
+      method: 'POST',
+      headers: {
+        'Authorization': `Bearer ${env.DNS_DASHBOARD_API_TOKEN}`,
+        'Content-Type': 'application/json',
+      },
+      body: JSON.stringify({ query }),
+    });
+
+    if (!response.ok) {
+      throw new Error(`GraphQL API error: ${response.status}`);
+    }
+
+    const data = await response.json();
+
+    if (data.errors) {
+      throw new Error(`GraphQL errors: ${data.errors.map(e => e.message).join(', ')}`);
+    }
+
+    const logs = [];
+    const resolverDecisionMap = {
+      0: 'Unknown',
+      1: 'Allowed',
+      2: 'Blocked (Policy)',
+      3: 'Blocked (Category)',
+      4: 'Allowed (Policy)',
+      5: 'Allowed (Category)',
+      6: 'Blocked (Malware)',
+      7: 'Safe Search',
+      8: 'Override',
+      9: 'Blocked (DLP)',
+      10: 'Allowed (Exception)'
+    };
+
+    if (data.data?.viewer?.accounts?.[0]?.gatewayResolverQueriesAdaptiveGroups) {
+      const groups = data.data.viewer.accounts[0].gatewayResolverQueriesAdaptiveGroups;
+
+      groups.forEach(group => {
+        const queryName = group.dimensions?.queryName || 'Unknown';
+        const categoryIds = group.dimensions?.categoryIds || '';
+        const resolverDecision = group.dimensions?.resolverDecision;
+        const datetime = group.dimensions?.datetimeMinute || now.toISOString();
+        const count = group.count || 1;
+
+        // Parse categories
+        let categories = [];
+        if (categoryIds) {
+          const cleanedIds = categoryIds.replace(/[\[\]]/g, '');
+          const ids = cleanedIds.split(',').map(id => id.trim()).filter(id => id);
+          categories = ids.map(id => CATEGORIES[id] || `Category ${id}`).slice(0, 3);
+        }
+
+        // Determine action type
+        const isBlocked = [2, 3, 6, 9].includes(resolverDecision);
+        const action = resolverDecisionMap[resolverDecision] || 'Unknown';
+
+        logs.push({
+          timestamp: datetime,
+          domain: queryName,
+          categories: categories,
+          action: action,
+          isBlocked: isBlocked,
+          count: count
+        });
+      });
+    }
+
+    return new Response(JSON.stringify({
+      logs: logs,
+      serverTime: now.toISOString()
+    }), {
+      headers: { 'Content-Type': 'application/json' },
+    });
+  } catch (error) {
+    console.error('Live logs error:', error);
+    return new Response(JSON.stringify({
+      error: error.message,
+      message: 'Failed to fetch live logs'
     }), {
       status: 500,
       headers: { 'Content-Type': 'application/json' },

@@ -559,6 +559,35 @@
                     </div>
                 </div>
 
+                <!-- Live DNS Logs Table - Only visible in Live mode -->
+                <div id="liveLogsContainer" class="card" style="margin-bottom: 16px; display: none;">
+                    <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 10px;">
+                        <h2 style="margin: 0;">🔴 Live DNS Logs</h2>
+                        <div style="display: flex; align-items: center; gap: 12px;">
+                            <span id="logCount" style="font-family: 'Roboto Mono', monospace; font-size: 0.75rem; color: var(--text-secondary);">0 logs</span>
+                            <button onclick="clearLogs()" class="btn" style="padding: 4px 12px; font-size: 0.75rem;">Clear</button>
+                        </div>
+                    </div>
+                    <div id="liveLogsTable" style="max-height: 300px; overflow-y: auto; font-family: 'Roboto Mono', monospace; font-size: 0.75rem;">
+                        <table style="width: 100%; border-collapse: collapse;">
+                            <thead style="position: sticky; top: 0; background: var(--bg-primary); z-index: 1;">
+                                <tr style="border-bottom: 1px solid var(--border-primary);">
+                                    <th style="text-align: left; padding: 8px 12px; color: var(--text-secondary); font-weight: 500;">Time</th>
+                                    <th style="text-align: left; padding: 8px 12px; color: var(--text-secondary); font-weight: 500;">Domain</th>
+                                    <th style="text-align: left; padding: 8px 12px; color: var(--text-secondary); font-weight: 500;">Category</th>
+                                    <th style="text-align: left; padding: 8px 12px; color: var(--text-secondary); font-weight: 500;">Action</th>
+                                </tr>
+                            </thead>
+                            <tbody id="liveLogsBody">
+                                <!-- Logs will be appended here -->
+                            </tbody>
+                        </table>
+                        <div id="noLogsMessage" style="text-align: center; padding: 20px; color: var(--text-secondary);">
+                            Waiting for DNS queries...
+                        </div>
+                    </div>
+                </div>
+
                 <div style="display: grid; grid-template-columns: repeat(2, 1fr); gap: 16px; margin-bottom: 16px;">
                     <div class="card">
                         <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 10px;">
@@ -710,18 +739,28 @@
         let countdownInterval = null;
         let countdownValue = 10;
         const LIVE_REFRESH_SECONDS = 10;
+        let lastLogTimestamp = null;
+        let allLogs = [];
+        const MAX_LOGS = 200;
 
         function toggleLiveMode() {
             isLiveMode = !isLiveMode;
             const liveBtn = document.getElementById('liveBtn');
             const liveStatus = document.getElementById('liveStatus');
             const liveBtnText = document.getElementById('liveBtnText');
+            const liveLogsContainer = document.getElementById('liveLogsContainer');
             
             if (isLiveMode) {
                 // Enable live mode
                 liveBtn.classList.add('active');
                 liveBtnText.textContent = 'Stop';
                 liveStatus.style.display = 'block';
+                liveLogsContainer.style.display = 'block';
+                
+                // Clear previous logs
+                allLogs = [];
+                lastLogTimestamp = null;
+                renderLogs();
                 
                 // Remove active from other buttons
                 document.querySelectorAll('.controls .btn:not(.live-btn)').forEach(btn => {
@@ -731,6 +770,7 @@
                 // Load data immediately with 5-minute range
                 currentTimeRange = '5m';
                 loadDashboardData('5m');
+                fetchLiveLogs();
                 
                 // Start countdown
                 countdownValue = LIVE_REFRESH_SECONDS;
@@ -741,6 +781,7 @@
                     if (countdownValue <= 0) {
                         countdownValue = LIVE_REFRESH_SECONDS;
                         loadDashboardData('5m');
+                        fetchLiveLogs();
                     }
                 }, 1000);
             } else {
@@ -748,6 +789,7 @@
                 liveBtn.classList.remove('active');
                 liveBtnText.textContent = 'Live';
                 liveStatus.style.display = 'none';
+                liveLogsContainer.style.display = 'none';
                 
                 // Clear intervals
                 if (countdownInterval) {
@@ -781,9 +823,11 @@
                 const liveBtn = document.getElementById('liveBtn');
                 const liveStatus = document.getElementById('liveStatus');
                 const liveBtnText = document.getElementById('liveBtnText');
+                const liveLogsContainer = document.getElementById('liveLogsContainer');
                 liveBtn.classList.remove('active');
                 liveBtnText.textContent = 'Live';
                 liveStatus.style.display = 'none';
+                liveLogsContainer.style.display = 'none';
                 if (countdownInterval) {
                     clearInterval(countdownInterval);
                     countdownInterval = null;
@@ -2286,6 +2330,77 @@
             if (event.target === modal) {
                 closeModal();
             }
+        }
+
+        // Live logs functions
+        async function fetchLiveLogs() {
+            try {
+                let url = '/dns/api/live-logs';
+                if (lastLogTimestamp) {
+                    url += '?since=' + encodeURIComponent(lastLogTimestamp);
+                }
+                
+                const response = await fetch(url);
+                const data = await response.json();
+                
+                if (data.logs && data.logs.length > 0) {
+                    // Add new logs to the beginning (newest first)
+                    const newLogs = data.logs.filter(log => {
+                        // Avoid duplicates based on domain + timestamp
+                        return !allLogs.some(existing => 
+                            existing.domain === log.domain && 
+                            existing.timestamp === log.timestamp
+                        );
+                    });
+                    
+                    if (newLogs.length > 0) {
+                        allLogs = [...newLogs, ...allLogs].slice(0, MAX_LOGS);
+                        renderLogs();
+                    }
+                }
+                
+                if (data.serverTime) {
+                    lastLogTimestamp = data.serverTime;
+                }
+            } catch (error) {
+                console.error('Error fetching live logs:', error);
+            }
+        }
+
+        function renderLogs() {
+            const tbody = document.getElementById('liveLogsBody');
+            const noLogsMessage = document.getElementById('noLogsMessage');
+            const logCount = document.getElementById('logCount');
+            
+            if (allLogs.length === 0) {
+                tbody.innerHTML = '';
+                noLogsMessage.style.display = 'block';
+                logCount.textContent = '0 logs';
+                return;
+            }
+            
+            noLogsMessage.style.display = 'none';
+            logCount.textContent = allLogs.length + ' logs';
+            
+            tbody.innerHTML = allLogs.map(log => {
+                const time = new Date(log.timestamp).toLocaleTimeString();
+                const categories = log.categories.length > 0 ? log.categories.join(', ') : '-';
+                const actionColor = log.isBlocked ? 'var(--accent-error)' : 'var(--accent-success)';
+                const rowBg = log.isBlocked ? 'rgba(220, 38, 38, 0.05)' : '';
+                
+                return `<tr style="border-bottom: 1px solid var(--border-secondary); background: ${rowBg};">
+                    <td style="padding: 8px 12px; white-space: nowrap;">${time}</td>
+                    <td style="padding: 8px 12px; max-width: 300px; overflow: hidden; text-overflow: ellipsis;" title="${log.domain}">${log.domain}</td>
+                    <td style="padding: 8px 12px; color: var(--text-secondary); max-width: 200px; overflow: hidden; text-overflow: ellipsis;" title="${categories}">${categories}</td>
+                    <td style="padding: 8px 12px; color: ${actionColor}; font-weight: 500;">${log.action}</td>
+                </tr>`;
+            }).join('');
+        }
+
+        function clearLogs() {
+            allLogs = [];
+            lastLogTimestamp = null;
+            renderLogs();
         }
 
         loadDashboardData('7d');
