@@ -887,13 +887,13 @@
             document.getElementById('topCountryBlockedCount').textContent = '-';
 
             Promise.all([
-                fetch('/dns/api/monthly-stats?timeRange=' + timeRange).then(r => r.json()),
-                fetch('/dns/api/30day?timeRange=' + timeRange).then(r => r.json()),
-                fetch('/dns/api/top-allowed?timeRange=' + timeRange).then(r => r.json()),
-                fetch('/dns/api/top-blocked?timeRange=' + timeRange).then(r => r.json()),
-                fetch('/dns/api/top-queries?timeRange=' + timeRange).then(r => r.json()),
-                fetch('/dns/api/geography?timeRange=' + timeRange).then(r => r.json()),
-                fetch('/dns/api/category-filtered?timeRange=' + timeRange).then(r => r.json()),
+                fetch('/dns/api/monthly-stats?timeRange=' + timeRange).then(r => r.json()).catch(() => ({ totalQueries: 0, allowedQueries: 0, blockedQueries: 0 })),
+                fetch('/dns/api/30day?timeRange=' + timeRange).then(r => r.json()).catch(() => []),
+                fetch('/dns/api/top-allowed?timeRange=' + timeRange).then(r => r.json()).catch(() => []),
+                fetch('/dns/api/top-blocked?timeRange=' + timeRange).then(r => r.json()).catch(() => []),
+                fetch('/dns/api/top-queries?timeRange=' + timeRange).then(r => r.json()).catch(() => []),
+                fetch('/dns/api/geography?timeRange=' + timeRange).then(r => r.json()).catch(() => []),
+                fetch('/dns/api/category-filtered?timeRange=' + timeRange).then(r => r.json()).catch(() => []),
                 fetch('/dns/api/geography-blocked?timeRange=' + timeRange).then(r => r.json()).catch(() => []),
                 fetch('/dns/api/applications-pie?timeRange=' + timeRange).then(r => r.json()).catch(() => []),
                 fetch('/dns/api/newly-observed?timeRange=' + timeRange).then(r => r.json()).catch(() => []),
