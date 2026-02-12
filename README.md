@@ -1,40 +1,77 @@
 # Cloudflare Custom Pages
 
-Custom pages for Cloudflare Secure Web Gateway (SWG) and Cloudflare Access, providing clear feedback and security information.
+Custom pages for Cloudflare Zero Trust, providing block pages, user information displays, and DNS analytics.
 
-## Features
+[![Deploy to Cloudflare Workers](https://deploy.workers.cloudflare.com/button)](https://deploy.workers.cloudflare.com/?url=https://github.com/leelakanakala/cfone-custom-pages)
+
+## Prerequisites
+
+Before deploying, ensure you have:
+
+- **Cloudflare Account** with Zero Trust enabled
+- **API Tokens** (see [Configuration](#configuration) below)
+- **Node.js 18+** (for local development only)
+
+For Cloudflare Workers setup, see the [Workers Documentation](https://developers.cloudflare.com/workers/get-started/guide/).
+
+## Projects Overview
 
 ### Gateway Block Page (`/cf-gateway/`)
-- Displays policy context when access is blocked by SWG
-- Shows blocked URL, categories, and policy details
-- Dual theme support (light/dark)
-- Responsive design
-- Copy technical details for IT support
+Custom block page for Cloudflare Secure Web Gateway. Displays policy context when access is blocked, including blocked URL, categories, and policy details. Supports light/dark themes.
 
 ![Gateway Block Page](src/img/gw-block-page.png)
-*Gateway block page showing policy context with dual theme support and technical information*
 
 ### Access Info Page (`/cf-access/`)
-- Displays user identity and device information
-- Shows WARP status and security posture
-- Device details (name, model, OS version)
-- Posture checks (Crowdstrike, OS updates)
-- Leverages Cloudflare Access authentication
+User identity and device information page. Shows WARP status, device details, and security posture checks (Crowdstrike, OS updates). Leverages Cloudflare Access authentication.
 
 ![Access Info Page](src/img/access-block-page.png)
-*Access info page displaying user identity, device information, and security posture*
-
-### Coaching Page (`/coaching/`)
-- Security awareness and training (coming soon)
 
 ### DNS Analytics Dashboard (`/cf-dns-dashboard/`)
-- Real-time DNS query analytics and monitoring
-- Query trends visualization (24h, 7d, 30d)
-- Top allowed/blocked categories
-- Top queried domain names
-- Security policy effectiveness tracking
-- Matches existing theme system (light/dark mode)
-- See [DNS_DASHBOARD_README.md](./DNS_DASHBOARD_README.md) for detailed documentation
+Real-time DNS query analytics powered by Cloudflare's GraphQL API for fast chart rendering.
+
+**Available Charts:**
+- **DNS Query Timeline** - Query volume over time (Live, 1h, 24h, 7d, 30d)
+- **Live DNS Logs** - Real-time streaming logs with 10-second refresh
+- **Top 20 Allowed/Blocked Categories** - Category breakdown
+- **Top 20 Queried Domains** - Most queried domain names
+- **Top 20 Blocked Domains** - Blocked domain analysis
+- **Newly Observed Domains** - First-seen domains
+- **Geography Analysis** - Query distribution by country
+- **Action Breakdown** - Allowed vs blocked pie chart
+- **Application Analysis** - Traffic by application type
+
+## Configuration
+
+### Required Secrets
+
+Set these using `wrangler secret put <SECRET_NAME>`:
+
+| Secret | Required For | Permissions |
+|--------|--------------|-------------|
+| `BEARER_TOKEN` | Access Info Page | Zero Trust → Devices → Read, Device Posture → Read |
+| `DNS_DASHBOARD_API_TOKEN` | DNS Dashboard | Account → Zero Trust → Read |
+| `DNS_DASHBOARD_ACCOUNT_ID` | DNS Dashboard | Your Cloudflare Account ID |
+
+### Gateway Block Page Setup
+
+1. Navigate to **Zero Trust** → **Gateway** → **Firewall Policies**
+2. Edit your block policy
+3. Set **Block page** to: `https://your-domain.com/cf-gateway/`
+
+### Access Info Page Setup
+
+1. Configure Cloudflare Access for your domain
+2. Set cookie domain to `.example.com` (wildcard for SSO)
+3. Configure `BEARER_TOKEN` secret for device/posture data
+
+### DNS Dashboard Setup
+
+1. Create API token with **Account → Zero Trust → Read** permission
+2. Set secrets:
+   ```bash
+   wrangler secret put DNS_DASHBOARD_API_TOKEN
+   wrangler secret put DNS_DASHBOARD_ACCOUNT_ID
+   ```
 
 ## Project Structure
 
@@ -43,167 +80,32 @@ cfone-custom-pages/
 ├── src/
 │   ├── pages/
 │   │   ├── cf-gateway/block.html
-│   │   ├── cf-access/
-│   │   │   ├── index.html
-│   │   │   └── scripts/
-│   │   │       ├── warpinfo.js
-│   │   │       ├── deviceinfo.js
-│   │   │       └── postureinfo.js
+│   │   ├── cf-access/index.html
 │   │   ├── coaching/index.html
 │   │   └── cf-dns-dashboard/
 │   │       ├── index.html
 │   │       └── categoryList.js
-│   ├── shared/
-│   │   ├── styles/theme.css
-│   │   └── scripts/theme-toggle.js
 │   ├── worker-template.js
 │   └── build.js
 ├── main.js (auto-generated)
-├── wrangler.jsonc (gitignored)
 ├── wrangler.example.jsonc
-├── ARCHITECTURE.md
-├── DNS_DASHBOARD_README.md
-└── README.md
+└── ARCHITECTURE.md
 ```
 
-## Quick Start
-
-### Prerequisites
-- Node.js 16+
-- Cloudflare account
-- Wrangler CLI
-
-### Installation
+## Development
 
 ```bash
-# Install dependencies
 npm install
-
-# Copy and configure wrangler.jsonc
 cp wrangler.example.jsonc wrangler.jsonc
-# Edit wrangler.jsonc with your account_id and routes
+# Edit wrangler.jsonc with your routes
 
-# Build and deploy
-npm run deploy
+npm run build    # Build worker
+npm run dev      # Local development
+npm run deploy   # Deploy to Cloudflare
 ```
-
-### Development
-
-```bash
-# Build worker
-npm run build
-
-# Local development
-npm run dev
-
-# Deploy to Cloudflare
-npm run deploy
-```
-
-## Configuration
-
-### Gateway Block Page
-
-1. Navigate to **Zero Trust** → **Gateway** → **Firewall Policies**
-2. Edit your block policy
-3. Set **Block page** to: `https://access.example.com/cf-gateway/`
-4. Cloudflare appends policy context as query parameters
-
-### Access Info Page
-
-1. Configure Cloudflare Access for your domain
-2. Set cookie domain to `.example.com` (wildcard)
-3. Users authenticate once, access `/cf-access/` without re-login
-4. Optional: Configure `BEARER_TOKEN` secret for enhanced device/posture data
-
-```bash
-# Set Bearer token for API calls
-wrangler secret put BEARER_TOKEN
-```
-
-**Bearer Token Permissions:**
-- Zero Trust → Devices → Read
-- Zero Trust → Device Posture → Read
-
-See [ARCHITECTURE.md](./ARCHITECTURE.md) for detailed authentication flow.
-
-## Query Parameters
-
-Gateway block page expects these from Cloudflare SWG:
-
-| Parameter | Description |
-|-----------|-------------|
-| `cf_site_uri` | Blocked URL |
-| `cf_request_category_names` | Content categories |
-| `cf_policy_name` | Blocking policy name |
-| `cf_rule_id` | Rule identifier |
-| `cf_device_id` | Device identifier |
-| `cf_source_ip` | Source IP address |
-| `cf_account_id` | Account ID |
-
-## Adding New Pages
-
-1. Create page directory: `src/pages/your-page/`
-2. Add HTML file: `src/pages/your-page/index.html`
-3. Update `src/worker-template.js` with route and serve function
-4. Update `src/build.js` to bundle the page
-5. Build and test: `npm run build && npm run dev`
-
-## Best Practices
-
-### Security
-- `wrangler.jsonc` is gitignored (contains account/domain info)
-- Use `wrangler.example.jsonc` as template
-- Bearer token stored as Wrangler secret (never in code)
-- HttpOnly cookies prevent XSS
-- Secure flag ensures HTTPS only
-
-### Development
-- Build before deploying: `npm run build`
-- Test locally: `npm run dev`
-- Use semantic versioning for releases
-- Keep ARCHITECTURE.md updated
-
-### Code Quality
-- Console logs only in build script
-- Error handling in all async functions
-- Consistent code formatting
-- Comments for complex logic
-
-## Troubleshooting
-
-**Cookie Not Sent (401 errors)**
-- Check cookie domain is `.example.com` (with leading dot)
-- Verify HTTPS is used
-- Ensure cookie hasn't expired
-
-**Device/Posture Data Empty**
-- Verify `BEARER_TOKEN` is configured: `wrangler secret list`
-- Check Bearer token has correct permissions
-- Verify `account_id` exists in identity data
-
-**Worker Logs**
-```bash
-# View real-time logs
-wrangler tail
-
-# View specific deployment logs
-wrangler tail --format=pretty
-```
-
-## Browser Support
-
-- Chrome/Edge (latest)
-- Firefox (latest)
-- Safari (latest)
-- Mobile browsers (iOS Safari, Chrome Mobile)
-
-## License
-
-Proprietary
 
 ## Documentation
 
-- [ARCHITECTURE.md](./ARCHITECTURE.md) - Authentication flow and technical details
-- [Cloudflare Access Docs](https://developers.cloudflare.com/cloudflare-one/identity/authorization-cookie/)
-- [Workers Docs](https://developers.cloudflare.com/workers/)
+- [ARCHITECTURE.md](./ARCHITECTURE.md) - Technical architecture details
+- [Cloudflare Workers Docs](https://developers.cloudflare.com/workers/)
+- [Zero Trust Docs](https://developers.cloudflare.com/cloudflare-one/)
