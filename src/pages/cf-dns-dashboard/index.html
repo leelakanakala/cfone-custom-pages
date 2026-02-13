@@ -2534,7 +2534,7 @@
             renderLogs();
         }
 
-        // PDF Report Generation - A4 optimized with proper margins and page breaks
+        // PDF Report Generation - Executive quality with full dashboard capture
         async function generatePDFReport() {
             const pdfBtn = document.getElementById('pdfBtn');
             const originalText = pdfBtn.innerHTML;
@@ -2548,24 +2548,16 @@
                 // A4 dimensions and margins
                 const pageWidth = 210;
                 const pageHeight = 297;
-                const margin = 15;
+                const margin = 12;
                 const contentWidth = pageWidth - (margin * 2);
                 let yPos = margin;
 
-                // Colors
-                const colors = {
-                    primary: [17, 24, 39],
-                    secondary: [75, 85, 99],
-                    tertiary: [107, 114, 128],
-                    success: [16, 185, 129],
-                    error: [220, 38, 38],
-                    border: [229, 231, 235],
-                    bg: [249, 250, 251]
-                };
+                // Time range labels
+                const timeRangeLabels = { '5m': 'Live (Last 5 Minutes)', '1h': 'Last 1 Hour', '24h': 'Last 24 Hours', '7d': 'Last 7 Days', '30d': 'Last 30 Days' };
 
                 // Helper: Add new page if needed
                 const checkPageBreak = (neededHeight) => {
-                    if (yPos + neededHeight > pageHeight - margin) {
+                    if (yPos + neededHeight > pageHeight - margin - 10) {
                         pdf.addPage();
                         yPos = margin;
                         return true;
@@ -2573,46 +2565,101 @@
                     return false;
                 };
 
-                // Helper: Draw a card/box
-                const drawCard = (x, y, w, h) => {
-                    pdf.setFillColor(255, 255, 255);
-                    pdf.setDrawColor(...colors.border);
-                    pdf.roundedRect(x, y, w, h, 2, 2, 'FD');
+                // Helper: Capture element as image using html2canvas
+                const captureElement = async (element) => {
+                    if (!element) return null;
+                    try {
+                        const canvas = await html2canvas(element, {
+                            scale: 2,
+                            useCORS: true,
+                            logging: false,
+                            backgroundColor: '#ffffff'
+                        });
+                        return {
+                            data: canvas.toDataURL('image/jpeg', 0.92),
+                            width: canvas.width,
+                            height: canvas.height
+                        };
+                    } catch (e) {
+                        console.warn('Could not capture element:', e);
+                        return null;
+                    }
                 };
 
-                // Helper: Capture chart as JPEG (smaller file size)
-                const captureChart = async (canvasId) => {
-                    const canvas = document.getElementById(canvasId);
-                    if (!canvas || canvas.tagName !== 'CANVAS') return null;
-                    return canvas.toDataURL('image/jpeg', 0.8);
-                };
-
-                // Time range labels
-                const timeRangeLabels = { '5m': 'Live (Last 5 Minutes)', '1h': 'Last 1 Hour', '24h': 'Last 24 Hours', '7d': 'Last 7 Days', '30d': 'Last 30 Days' };
-
-                // === PAGE 1: Header and Summary ===
+                // === HEADER WITH CLOUDFLARE BRANDING ===
+                // Orange gradient header bar
+                pdf.setFillColor(243, 128, 32); // Cloudflare orange
+                pdf.rect(0, 0, pageWidth, 3, 'F');
                 
-                // Header
-                pdf.setFillColor(...colors.bg);
-                pdf.rect(0, 0, pageWidth, 35, 'F');
+                // Header background
+                pdf.setFillColor(249, 250, 251);
+                pdf.rect(0, 3, pageWidth, 32, 'F');
                 
-                pdf.setFontSize(20);
-                pdf.setFont('helvetica', 'bold');
-                pdf.setTextColor(...colors.primary);
-                pdf.text('DNS Analytics Report', margin, 20);
-                
+                // Cloudflare logo text (simplified)
                 pdf.setFontSize(10);
+                pdf.setFont('helvetica', 'bold');
+                pdf.setTextColor(243, 128, 32);
+                pdf.text('cloudflare', margin, 14);
+                pdf.setTextColor(107, 114, 128);
                 pdf.setFont('helvetica', 'normal');
-                pdf.setTextColor(...colors.secondary);
-                pdf.text('Time Range: ' + (timeRangeLabels[currentTimeRange] || currentTimeRange), margin, 28);
+                pdf.setFontSize(8);
+                pdf.text('Zero Trust', margin + 24, 14);
+                
+                // Report title
+                pdf.setFontSize(18);
+                pdf.setFont('helvetica', 'bold');
+                pdf.setTextColor(17, 24, 39);
+                pdf.text('DNS Analytics Report', margin, 26);
                 
                 pdf.setFontSize(9);
-                pdf.setTextColor(...colors.tertiary);
-                pdf.text('Generated: ' + new Date().toLocaleString(), pageWidth - margin, 20, { align: 'right' });
+                pdf.setFont('helvetica', 'normal');
+                pdf.setTextColor(75, 85, 99);
+                pdf.text('Time Range: ' + (timeRangeLabels[currentTimeRange] || currentTimeRange), margin, 32);
                 
-                yPos = 45;
+                // Generation date on right
+                pdf.setFontSize(8);
+                pdf.setTextColor(107, 114, 128);
+                pdf.text('Generated: ' + new Date().toLocaleString(), pageWidth - margin, 14, { align: 'right' });
+                
+                yPos = 42;
 
-                // Summary Statistics Cards
+                // === CAPTURE SIDEBAR STATS ===
+                const sidebar = document.querySelector('.container > div > div:first-child');
+                if (sidebar) {
+                    const sidebarImg = await captureElement(sidebar);
+                    if (sidebarImg) {
+                        const imgHeight = (sidebarImg.height / sidebarImg.width) * 50;
+                        pdf.addImage(sidebarImg.data, 'JPEG', margin, yPos, 50, Math.min(imgHeight, 80));
+                    }
+                }
+
+                // === CAPTURE MAIN CHARTS ===
+                // Get all card elements
+                const cards = document.querySelectorAll('.card');
+                const capturedCards = [];
+                
+                // Hide info buttons temporarily
+                const infoButtons = document.querySelectorAll('.info-btn');
+                infoButtons.forEach(btn => btn.style.visibility = 'hidden');
+                
+                // Capture each card
+                for (const card of cards) {
+                    // Skip live logs container
+                    if (card.closest('#liveLogsContainer')) continue;
+                    
+                    const img = await captureElement(card);
+                    if (img) {
+                        capturedCards.push(img);
+                    }
+                }
+                
+                // Restore info buttons
+                infoButtons.forEach(btn => btn.style.visibility = '');
+
+                // Start fresh for charts (after summary)
+                yPos = 42;
+                
+                // Summary stats row
                 const totalQueries = document.getElementById('totalQueries').textContent;
                 const allowedQueries = document.getElementById('allowedQueries').textContent;
                 const blockedQueries = document.getElementById('blockedQueries').textContent;
@@ -2623,136 +2670,93 @@
                 const topCountryBlocked = document.getElementById('topCountryBlocked').textContent;
                 const topCountryBlockedCount = document.getElementById('topCountryBlockedCount').textContent;
 
-                // Draw summary cards in a row
-                const cardWidth = (contentWidth - 12) / 3;
-                const cardHeight = 28;
+                // Draw summary cards
+                const drawSummaryCard = (x, y, w, h, title, value, subtitle, valueColor) => {
+                    pdf.setFillColor(255, 255, 255);
+                    pdf.setDrawColor(229, 231, 235);
+                    pdf.roundedRect(x, y, w, h, 2, 2, 'FD');
+                    
+                    pdf.setFontSize(7);
+                    pdf.setFont('helvetica', 'normal');
+                    pdf.setTextColor(107, 114, 128);
+                    pdf.text(title, x + 4, y + 7);
+                    
+                    pdf.setFontSize(14);
+                    pdf.setFont('helvetica', 'bold');
+                    pdf.setTextColor(...valueColor);
+                    pdf.text(value, x + 4, y + 17);
+                    
+                    if (subtitle) {
+                        pdf.setFontSize(7);
+                        pdf.setFont('helvetica', 'normal');
+                        pdf.setTextColor(107, 114, 128);
+                        pdf.text(subtitle, x + 4, y + 22);
+                    }
+                };
+
+                const cardW = (contentWidth - 8) / 3;
+                drawSummaryCard(margin, yPos, cardW, 26, 'TOTAL QUERIES', totalQueries, '', [17, 24, 39]);
+                drawSummaryCard(margin + cardW + 4, yPos, cardW, 26, 'ALLOWED QUERIES', allowedQueries, allowedPercent, [16, 185, 129]);
+                drawSummaryCard(margin + (cardW + 4) * 2, yPos, cardW, 26, 'BLOCKED QUERIES', blockedQueries, blockedPercent, [220, 38, 38]);
                 
-                // Total Queries Card
-                drawCard(margin, yPos, cardWidth, cardHeight);
-                pdf.setFontSize(8);
-                pdf.setTextColor(...colors.tertiary);
-                pdf.text('TOTAL QUERIES', margin + 4, yPos + 8);
-                pdf.setFontSize(16);
-                pdf.setFont('helvetica', 'bold');
-                pdf.setTextColor(...colors.primary);
-                pdf.text(totalQueries, margin + 4, yPos + 20);
-
-                // Allowed Queries Card
-                drawCard(margin + cardWidth + 6, yPos, cardWidth, cardHeight);
-                pdf.setFontSize(8);
-                pdf.setFont('helvetica', 'normal');
-                pdf.setTextColor(...colors.tertiary);
-                pdf.text('ALLOWED QUERIES', margin + cardWidth + 10, yPos + 8);
-                pdf.setFontSize(16);
-                pdf.setFont('helvetica', 'bold');
-                pdf.setTextColor(...colors.success);
-                pdf.text(allowedQueries, margin + cardWidth + 10, yPos + 20);
-                pdf.setFontSize(8);
-                pdf.setFont('helvetica', 'normal');
-                pdf.setTextColor(...colors.tertiary);
-                pdf.text(allowedPercent, margin + cardWidth + 10, yPos + 25);
-
-                // Blocked Queries Card
-                drawCard(margin + (cardWidth + 6) * 2, yPos, cardWidth, cardHeight);
-                pdf.setFontSize(8);
-                pdf.setFont('helvetica', 'normal');
-                pdf.setTextColor(...colors.tertiary);
-                pdf.text('BLOCKED QUERIES', margin + (cardWidth + 6) * 2 + 4, yPos + 8);
-                pdf.setFontSize(16);
-                pdf.setFont('helvetica', 'bold');
-                pdf.setTextColor(...colors.error);
-                pdf.text(blockedQueries, margin + (cardWidth + 6) * 2 + 4, yPos + 20);
-                pdf.setFontSize(8);
-                pdf.setFont('helvetica', 'normal');
-                pdf.setTextColor(...colors.tertiary);
-                pdf.text(blockedPercent, margin + (cardWidth + 6) * 2 + 4, yPos + 25);
-
-                yPos += cardHeight + 8;
-
-                // Second row: Geo stats
-                const halfWidth = (contentWidth - 6) / 2;
-                drawCard(margin, yPos, halfWidth, 22);
-                pdf.setFontSize(8);
-                pdf.setTextColor(...colors.tertiary);
-                pdf.text('TOP QUERY SOURCE GEO', margin + 4, yPos + 8);
-                pdf.setFontSize(12);
-                pdf.setFont('helvetica', 'bold');
-                pdf.setTextColor(...colors.primary);
-                pdf.text(topCountryQueries, margin + 4, yPos + 16);
-                pdf.setFontSize(8);
-                pdf.setFont('helvetica', 'normal');
-                pdf.setTextColor(...colors.tertiary);
-                pdf.text(topCountryQueriesCount, margin + 30, yPos + 16);
-
-                drawCard(margin + halfWidth + 6, yPos, halfWidth, 22);
-                pdf.setFontSize(8);
-                pdf.setTextColor(...colors.tertiary);
-                pdf.text('TOP BLOCKED SOURCE GEO', margin + halfWidth + 10, yPos + 8);
-                pdf.setFontSize(12);
-                pdf.setFont('helvetica', 'bold');
-                pdf.setTextColor(...colors.error);
-                pdf.text(topCountryBlocked, margin + halfWidth + 10, yPos + 16);
-                pdf.setFontSize(8);
-                pdf.setFont('helvetica', 'normal');
-                pdf.setTextColor(...colors.tertiary);
-                pdf.text(topCountryBlockedCount, margin + halfWidth + 36, yPos + 16);
-
                 yPos += 30;
 
-                // Charts configuration
-                const charts = [
-                    { id: 'timelineChart', title: 'DNS Query Timeline', height: 50 },
-                    { id: 'geographyChart', title: 'DNS Queries by Geography', height: 55 },
-                    { id: 'categoryChart', title: 'DNS Queries by Category', height: 55 },
-                    { id: 'actionBreakdownChart', title: 'DNS Action Breakdown', height: 50 },
-                    { id: 'applicationsPieChart', title: 'Application Summary', height: 50 },
-                    { id: 'allowedChart', title: 'Top 20 Allowed Categories', height: 70 },
-                    { id: 'blockedChart', title: 'Top 20 Blocked Categories', height: 70 },
-                    { id: 'queriesChart', title: 'Top 20 Queried Domains', height: 70 },
-                    { id: 'blockedDomainsChart', title: 'Top 20 Blocked Domains', height: 70 },
-                    { id: 'newlyObservedChart', title: 'Newly Observed Domains', height: 70 }
-                ];
+                // Geo stats row
+                const halfW = (contentWidth - 4) / 2;
+                drawSummaryCard(margin, yPos, halfW, 20, 'TOP QUERY SOURCE GEO', topCountryQueries + '  ' + topCountryQueriesCount, '', [17, 24, 39]);
+                drawSummaryCard(margin + halfW + 4, yPos, halfW, 20, 'TOP BLOCKED SOURCE GEO', topCountryBlocked + '  ' + topCountryBlockedCount, '', [220, 38, 38]);
+                
+                yPos += 26;
 
-                // Add charts
-                for (const chart of charts) {
-                    const imgData = await captureChart(chart.id);
-                    if (!imgData) continue;
-
-                    const chartHeight = chart.height;
-                    checkPageBreak(chartHeight + 15);
-
-                    // Chart title
-                    pdf.setFontSize(11);
-                    pdf.setFont('helvetica', 'bold');
-                    pdf.setTextColor(...colors.primary);
-                    pdf.text(chart.title, margin, yPos);
-                    yPos += 5;
-
-                    // Chart card
-                    drawCard(margin, yPos, contentWidth, chartHeight);
+                // Add captured cards to PDF
+                for (let i = 0; i < capturedCards.length; i++) {
+                    const img = capturedCards[i];
                     
-                    // Add chart image
-                    try {
-                        pdf.addImage(imgData, 'JPEG', margin + 2, yPos + 2, contentWidth - 4, chartHeight - 4);
-                    } catch (e) {
-                        console.warn('Could not add chart:', chart.id);
+                    // Calculate dimensions maintaining aspect ratio
+                    const aspectRatio = img.width / img.height;
+                    let imgWidth = contentWidth;
+                    let imgHeight = imgWidth / aspectRatio;
+                    
+                    // Limit max height
+                    if (imgHeight > 100) {
+                        imgHeight = 100;
+                        imgWidth = imgHeight * aspectRatio;
                     }
                     
-                    yPos += chartHeight + 8;
+                    // Check page break
+                    checkPageBreak(imgHeight + 5);
+                    
+                    // Add image
+                    pdf.addImage(img.data, 'JPEG', margin, yPos, imgWidth, imgHeight);
+                    yPos += imgHeight + 6;
                 }
 
                 // Footer on each page
                 const totalPages = pdf.internal.getNumberOfPages();
                 for (let i = 1; i <= totalPages; i++) {
                     pdf.setPage(i);
-                    pdf.setFontSize(8);
-                    pdf.setTextColor(...colors.tertiary);
-                    pdf.text('DNS Analytics Report - Page ' + i + ' of ' + totalPages, margin, pageHeight - 8);
-                    pdf.text('Generated by Cloudflare Zero Trust Dashboard', pageWidth - margin, pageHeight - 8, { align: 'right' });
+                    
+                    // Footer line
+                    pdf.setDrawColor(229, 231, 235);
+                    pdf.line(margin, pageHeight - 12, pageWidth - margin, pageHeight - 12);
+                    
+                    // Footer text
+                    pdf.setFontSize(7);
+                    pdf.setTextColor(107, 114, 128);
+                    pdf.text('DNS Analytics Report', margin, pageHeight - 7);
+                    pdf.text('Page ' + i + ' of ' + totalPages, pageWidth / 2, pageHeight - 7, { align: 'center' });
+                    
+                    // Cloudflare branding
+                    pdf.setTextColor(243, 128, 32);
+                    pdf.setFont('helvetica', 'bold');
+                    pdf.text('cloudflare', pageWidth - margin - 20, pageHeight - 7);
+                    pdf.setTextColor(107, 114, 128);
+                    pdf.setFont('helvetica', 'normal');
+                    pdf.text('Zero Trust', pageWidth - margin, pageHeight - 7);
                 }
 
                 // Save PDF
-                const filename = 'dns-report-' + currentTimeRange + '-' + new Date().toISOString().split('T')[0] + '.pdf';
+                const filename = 'dns-analytics-report-' + currentTimeRange + '-' + new Date().toISOString().split('T')[0] + '.pdf';
                 pdf.save(filename);
 
             } catch (error) {
