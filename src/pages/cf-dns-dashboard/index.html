@@ -2534,7 +2534,7 @@
             renderLogs();
         }
 
-        // PDF Report Generation
+        // PDF Report Generation - captures the actual dashboard layout
         async function generatePDFReport() {
             const pdfBtn = document.getElementById('pdfBtn');
             const originalText = pdfBtn.innerHTML;
@@ -2543,165 +2543,108 @@
 
             try {
                 const { jsPDF } = window.jspdf;
-                const pdf = new jsPDF('p', 'mm', 'a4');
-                const pageWidth = pdf.internal.pageSize.getWidth();
-                const pageHeight = pdf.internal.pageSize.getHeight();
-                const margin = 15;
-                let yPos = margin;
+                
+                // Hide elements we don't want in the PDF
+                const header = document.querySelector('header');
+                const controls = document.querySelector('.controls');
+                const liveStatus = document.getElementById('liveStatus');
+                const liveLogsContainer = document.getElementById('liveLogsContainer');
+                const modal = document.getElementById('modal');
+                
+                if (header) header.style.display = 'none';
+                if (controls) controls.style.display = 'none';
+                if (liveStatus) liveStatus.style.display = 'none';
+                if (liveLogsContainer) liveLogsContainer.style.display = 'none';
+                if (modal) modal.style.display = 'none';
 
-                // Helper function to add text with word wrap
-                const addWrappedText = (text, x, y, maxWidth, fontSize = 10) => {
-                    pdf.setFontSize(fontSize);
-                    const lines = pdf.splitTextToSize(text, maxWidth);
-                    pdf.text(lines, x, y);
-                    return y + (lines.length * fontSize * 0.4);
-                };
-
-                // Helper to check page break
-                const checkPageBreak = (neededHeight) => {
-                    if (yPos + neededHeight > pageHeight - margin) {
-                        pdf.addPage();
-                        yPos = margin;
-                        return true;
-                    }
-                    return false;
-                };
-
-                // Title
-                pdf.setFontSize(20);
-                pdf.setFont('helvetica', 'bold');
-                pdf.text('DNS Analytics Report', margin, yPos);
-                yPos += 10;
-
-                // Metadata
-                pdf.setFontSize(10);
-                pdf.setFont('helvetica', 'normal');
+                // Create a wrapper for the PDF content
+                const container = document.querySelector('.container');
+                
+                // Add a temporary header for the PDF
+                const pdfHeader = document.createElement('div');
+                pdfHeader.id = 'pdfHeader';
+                pdfHeader.style.cssText = 'padding: 20px; margin-bottom: 16px; background: var(--bg-primary); border-radius: 12px; border: 1px solid var(--border-primary);';
                 const timeRangeLabels = { '5m': 'Live (Last 5 Minutes)', '1h': 'Last 1 Hour', '24h': 'Last 24 Hours', '7d': 'Last 7 Days', '30d': 'Last 30 Days' };
-                pdf.text('Time Range: ' + (timeRangeLabels[currentTimeRange] || currentTimeRange), margin, yPos);
-                yPos += 5;
-                pdf.text('Generated: ' + new Date().toLocaleString(), margin, yPos);
-                yPos += 10;
+                pdfHeader.innerHTML = `
+                    <div style="display: flex; justify-content: space-between; align-items: center;">
+                        <div>
+                            <h1 style="margin: 0; font-size: 1.5rem; font-weight: 700; color: var(--text-primary);">DNS Analytics Report</h1>
+                            <p style="margin: 4px 0 0 0; font-size: 0.875rem; color: var(--text-secondary);">Time Range: ${timeRangeLabels[currentTimeRange] || currentTimeRange}</p>
+                        </div>
+                        <div style="text-align: right;">
+                            <p style="margin: 0; font-size: 0.75rem; color: var(--text-tertiary);">Generated: ${new Date().toLocaleString()}</p>
+                        </div>
+                    </div>
+                `;
+                container.insertBefore(pdfHeader, container.firstChild);
 
-                // Summary Statistics
-                pdf.setFontSize(14);
-                pdf.setFont('helvetica', 'bold');
-                pdf.text('Summary Statistics', margin, yPos);
-                yPos += 7;
+                // Wait for any pending renders
+                await new Promise(resolve => setTimeout(resolve, 500));
 
-                pdf.setFontSize(10);
-                pdf.setFont('helvetica', 'normal');
-                const totalQueries = document.getElementById('totalQueries').textContent;
-                const allowedQueries = document.getElementById('allowedQueries').textContent;
-                const blockedQueries = document.getElementById('blockedQueries').textContent;
-                const allowedPercent = document.getElementById('allowedPercent').textContent;
-                const blockedPercent = document.getElementById('blockedPercent').textContent;
+                // Capture the entire container
+                const canvas = await html2canvas(container, {
+                    scale: 2,
+                    useCORS: true,
+                    logging: false,
+                    backgroundColor: document.body.classList.contains('dark-mode') ? '#111827' : '#f9fafb',
+                    windowWidth: container.scrollWidth,
+                    windowHeight: container.scrollHeight
+                });
 
-                pdf.text('Total Queries: ' + totalQueries, margin, yPos);
-                yPos += 5;
-                pdf.text('Allowed Queries: ' + allowedQueries + ' (' + allowedPercent + ')', margin, yPos);
-                yPos += 5;
-                pdf.text('Blocked Queries: ' + blockedQueries + ' (' + blockedPercent + ')', margin, yPos);
-                yPos += 5;
+                // Remove temporary header
+                pdfHeader.remove();
 
-                const topCountryQueries = document.getElementById('topCountryQueries').textContent;
-                const topCountryBlocked = document.getElementById('topCountryBlocked').textContent;
-                pdf.text('Top Query Source: ' + topCountryQueries, margin, yPos);
-                yPos += 5;
-                pdf.text('Top Blocked Source: ' + topCountryBlocked, margin, yPos);
-                yPos += 10;
+                // Restore hidden elements
+                if (header) header.style.display = '';
+                if (controls) controls.style.display = '';
+                if (liveStatus && isLiveMode) liveStatus.style.display = '';
+                if (liveLogsContainer && isLiveMode) liveLogsContainer.style.display = '';
 
-                // Chart summaries with descriptions
-                const chartSections = [
-                    {
-                        id: 'timelineChart',
-                        title: 'DNS Query Timeline',
-                        summary: 'Shows the volume of DNS queries over time. Spikes may indicate unusual activity, while consistent patterns suggest normal usage. Use this to identify traffic anomalies and peak usage periods.'
-                    },
-                    {
-                        id: 'allowedChart',
-                        title: 'Top 20 Allowed Categories',
-                        summary: 'Displays the most frequently accessed content categories that were permitted by your security policies. High counts in business-related categories indicate productive usage.'
-                    },
-                    {
-                        id: 'blockedChart',
-                        title: 'Top 20 Blocked Categories',
-                        summary: 'Shows content categories that were blocked by security policies. Review these to understand what threats are being prevented and if policies need adjustment.'
-                    },
-                    {
-                        id: 'queriesChart',
-                        title: 'Top 20 Queried Domains',
-                        summary: 'Lists the most frequently queried domain names. Unusual domains with high query counts may warrant investigation for potential security concerns.'
-                    },
-                    {
-                        id: 'blockedDomainsChart',
-                        title: 'Top 20 Blocked Domains',
-                        summary: 'Shows specific domains that were blocked. Review these to identify potential threats or adjust policies if legitimate domains are being blocked.'
-                    },
-                    {
-                        id: 'newlyObservedChart',
-                        title: 'Newly Observed Domains',
-                        summary: 'Domains queried for the first time in this period. New domains can indicate legitimate new services or potential threats requiring investigation.'
-                    },
-                    {
-                        id: 'geographyChart',
-                        title: 'Query Geography Distribution',
-                        summary: 'Geographic distribution of DNS query sources. Unexpected countries with high query volumes may indicate compromised devices or VPN usage.'
-                    },
-                    {
-                        id: 'categoryChart',
-                        title: 'Category Analysis',
-                        summary: 'Breakdown of all DNS queries by content category. Provides insight into overall network usage patterns and content consumption.'
-                    },
-                    {
-                        id: 'actionBreakdownChart',
-                        title: 'Action Breakdown',
-                        summary: 'Pie chart showing the proportion of allowed vs blocked queries. A healthy network typically shows mostly allowed traffic with targeted blocks.'
-                    },
-                    {
-                        id: 'applicationsPieChart',
-                        title: 'Application Analysis',
-                        summary: 'Distribution of DNS queries by application type. Helps identify which applications are generating the most DNS traffic.'
-                    }
-                ];
+                // Create PDF
+                const imgData = canvas.toDataURL('image/png');
+                const imgWidth = canvas.width;
+                const imgHeight = canvas.height;
 
-                for (const section of chartSections) {
-                    const canvas = document.getElementById(section.id);
-                    if (!canvas || canvas.tagName !== 'CANVAS') continue;
+                // Calculate PDF dimensions (A4 width, variable height based on content)
+                const pdfWidth = 210; // A4 width in mm
+                const pdfHeight = (imgHeight * pdfWidth) / imgWidth;
+                
+                // Create PDF with custom height to fit content, or split into pages
+                const pageHeight = 297; // A4 height in mm
+                const pdf = new jsPDF('p', 'mm', [pdfWidth, Math.min(pdfHeight, pageHeight * 10)]);
 
-                    checkPageBreak(80);
+                if (pdfHeight <= pageHeight) {
+                    // Single page
+                    pdf.addImage(imgData, 'PNG', 0, 0, pdfWidth, pdfHeight);
+                } else {
+                    // Multiple pages
+                    let remainingHeight = pdfHeight;
+                    let position = 0;
+                    let pageNum = 0;
 
-                    // Section title
-                    pdf.setFontSize(12);
-                    pdf.setFont('helvetica', 'bold');
-                    pdf.text(section.title, margin, yPos);
-                    yPos += 5;
+                    while (remainingHeight > 0) {
+                        if (pageNum > 0) {
+                            pdf.addPage([pdfWidth, pageHeight]);
+                        }
+                        
+                        const sourceY = (pageNum * pageHeight * imgWidth) / pdfWidth;
+                        const sourceHeight = Math.min((pageHeight * imgWidth) / pdfWidth, imgHeight - sourceY);
+                        const destHeight = (sourceHeight * pdfWidth) / imgWidth;
 
-                    // Summary text
-                    pdf.setFontSize(9);
-                    pdf.setFont('helvetica', 'italic');
-                    yPos = addWrappedText(section.summary, margin, yPos, pageWidth - (margin * 2), 9);
-                    yPos += 3;
+                        // Create a temporary canvas for this page section
+                        const pageCanvas = document.createElement('canvas');
+                        pageCanvas.width = imgWidth;
+                        pageCanvas.height = sourceHeight;
+                        const ctx = pageCanvas.getContext('2d');
+                        ctx.drawImage(canvas, 0, sourceY, imgWidth, sourceHeight, 0, 0, imgWidth, sourceHeight);
+                        
+                        const pageImgData = pageCanvas.toDataURL('image/png');
+                        pdf.addImage(pageImgData, 'PNG', 0, 0, pdfWidth, destHeight);
 
-                    // Capture chart as image
-                    try {
-                        const imgData = canvas.toDataURL('image/png', 1.0);
-                        const imgWidth = pageWidth - (margin * 2);
-                        const imgHeight = (canvas.height / canvas.width) * imgWidth;
-                        const finalHeight = Math.min(imgHeight, 60);
-
-                        checkPageBreak(finalHeight + 10);
-                        pdf.addImage(imgData, 'PNG', margin, yPos, imgWidth, finalHeight);
-                        yPos += finalHeight + 10;
-                    } catch (e) {
-                        console.warn('Could not capture chart:', section.id, e);
-                        yPos += 5;
+                        remainingHeight -= pageHeight;
+                        pageNum++;
                     }
                 }
-
-                // Footer on last page
-                pdf.setFontSize(8);
-                pdf.setFont('helvetica', 'normal');
-                pdf.text('Generated by DNS Analytics Dashboard', margin, pageHeight - 10);
 
                 // Save PDF
                 const filename = 'dns-report-' + currentTimeRange + '-' + new Date().toISOString().split('T')[0] + '.pdf';
@@ -2710,6 +2653,14 @@
             } catch (error) {
                 console.error('PDF generation error:', error);
                 alert('Failed to generate PDF. Please try again.');
+                
+                // Restore elements on error
+                const header = document.querySelector('header');
+                const controls = document.querySelector('.controls');
+                const pdfHeader = document.getElementById('pdfHeader');
+                if (header) header.style.display = '';
+                if (controls) controls.style.display = '';
+                if (pdfHeader) pdfHeader.remove();
             } finally {
                 pdfBtn.innerHTML = originalText;
                 pdfBtn.disabled = false;
