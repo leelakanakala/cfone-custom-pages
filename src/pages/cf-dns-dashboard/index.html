@@ -2534,7 +2534,7 @@
             renderLogs();
         }
 
-        // PDF Report Generation - captures the actual dashboard layout
+        // PDF Report Generation - A4 optimized with proper margins and page breaks
         async function generatePDFReport() {
             const pdfBtn = document.getElementById('pdfBtn');
             const originalText = pdfBtn.innerHTML;
@@ -2543,107 +2543,212 @@
 
             try {
                 const { jsPDF } = window.jspdf;
+                const pdf = new jsPDF('p', 'mm', 'a4');
                 
-                // Hide elements we don't want in the PDF
-                const header = document.querySelector('header');
-                const controls = document.querySelector('.controls');
-                const liveStatus = document.getElementById('liveStatus');
-                const liveLogsContainer = document.getElementById('liveLogsContainer');
-                const modal = document.getElementById('modal');
-                
-                if (header) header.style.display = 'none';
-                if (controls) controls.style.display = 'none';
-                if (liveStatus) liveStatus.style.display = 'none';
-                if (liveLogsContainer) liveLogsContainer.style.display = 'none';
-                if (modal) modal.style.display = 'none';
+                // A4 dimensions and margins
+                const pageWidth = 210;
+                const pageHeight = 297;
+                const margin = 15;
+                const contentWidth = pageWidth - (margin * 2);
+                let yPos = margin;
 
-                // Create a wrapper for the PDF content
-                const container = document.querySelector('.container');
-                
-                // Add a temporary header for the PDF
-                const pdfHeader = document.createElement('div');
-                pdfHeader.id = 'pdfHeader';
-                pdfHeader.style.cssText = 'padding: 20px; margin-bottom: 16px; background: var(--bg-primary); border-radius: 12px; border: 1px solid var(--border-primary);';
-                const timeRangeLabels = { '5m': 'Live (Last 5 Minutes)', '1h': 'Last 1 Hour', '24h': 'Last 24 Hours', '7d': 'Last 7 Days', '30d': 'Last 30 Days' };
-                pdfHeader.innerHTML = `
-                    <div style="display: flex; justify-content: space-between; align-items: center;">
-                        <div>
-                            <h1 style="margin: 0; font-size: 1.5rem; font-weight: 700; color: var(--text-primary);">DNS Analytics Report</h1>
-                            <p style="margin: 4px 0 0 0; font-size: 0.875rem; color: var(--text-secondary);">Time Range: ${timeRangeLabels[currentTimeRange] || currentTimeRange}</p>
-                        </div>
-                        <div style="text-align: right;">
-                            <p style="margin: 0; font-size: 0.75rem; color: var(--text-tertiary);">Generated: ${new Date().toLocaleString()}</p>
-                        </div>
-                    </div>
-                `;
-                container.insertBefore(pdfHeader, container.firstChild);
+                // Colors
+                const colors = {
+                    primary: [17, 24, 39],
+                    secondary: [75, 85, 99],
+                    tertiary: [107, 114, 128],
+                    success: [16, 185, 129],
+                    error: [220, 38, 38],
+                    border: [229, 231, 235],
+                    bg: [249, 250, 251]
+                };
 
-                // Wait for any pending renders
-                await new Promise(resolve => setTimeout(resolve, 500));
-
-                // Capture the entire container
-                const canvas = await html2canvas(container, {
-                    scale: 2,
-                    useCORS: true,
-                    logging: false,
-                    backgroundColor: document.body.classList.contains('dark-mode') ? '#111827' : '#f9fafb',
-                    windowWidth: container.scrollWidth,
-                    windowHeight: container.scrollHeight
-                });
-
-                // Remove temporary header
-                pdfHeader.remove();
-
-                // Restore hidden elements
-                if (header) header.style.display = '';
-                if (controls) controls.style.display = '';
-                if (liveStatus && isLiveMode) liveStatus.style.display = '';
-                if (liveLogsContainer && isLiveMode) liveLogsContainer.style.display = '';
-
-                // Create PDF
-                const imgData = canvas.toDataURL('image/png');
-                const imgWidth = canvas.width;
-                const imgHeight = canvas.height;
-
-                // Calculate PDF dimensions (A4 width, variable height based on content)
-                const pdfWidth = 210; // A4 width in mm
-                const pdfHeight = (imgHeight * pdfWidth) / imgWidth;
-                
-                // Create PDF with custom height to fit content, or split into pages
-                const pageHeight = 297; // A4 height in mm
-                const pdf = new jsPDF('p', 'mm', [pdfWidth, Math.min(pdfHeight, pageHeight * 10)]);
-
-                if (pdfHeight <= pageHeight) {
-                    // Single page
-                    pdf.addImage(imgData, 'PNG', 0, 0, pdfWidth, pdfHeight);
-                } else {
-                    // Multiple pages
-                    let remainingHeight = pdfHeight;
-                    let position = 0;
-                    let pageNum = 0;
-
-                    while (remainingHeight > 0) {
-                        if (pageNum > 0) {
-                            pdf.addPage([pdfWidth, pageHeight]);
-                        }
-                        
-                        const sourceY = (pageNum * pageHeight * imgWidth) / pdfWidth;
-                        const sourceHeight = Math.min((pageHeight * imgWidth) / pdfWidth, imgHeight - sourceY);
-                        const destHeight = (sourceHeight * pdfWidth) / imgWidth;
-
-                        // Create a temporary canvas for this page section
-                        const pageCanvas = document.createElement('canvas');
-                        pageCanvas.width = imgWidth;
-                        pageCanvas.height = sourceHeight;
-                        const ctx = pageCanvas.getContext('2d');
-                        ctx.drawImage(canvas, 0, sourceY, imgWidth, sourceHeight, 0, 0, imgWidth, sourceHeight);
-                        
-                        const pageImgData = pageCanvas.toDataURL('image/png');
-                        pdf.addImage(pageImgData, 'PNG', 0, 0, pdfWidth, destHeight);
-
-                        remainingHeight -= pageHeight;
-                        pageNum++;
+                // Helper: Add new page if needed
+                const checkPageBreak = (neededHeight) => {
+                    if (yPos + neededHeight > pageHeight - margin) {
+                        pdf.addPage();
+                        yPos = margin;
+                        return true;
                     }
+                    return false;
+                };
+
+                // Helper: Draw a card/box
+                const drawCard = (x, y, w, h) => {
+                    pdf.setFillColor(255, 255, 255);
+                    pdf.setDrawColor(...colors.border);
+                    pdf.roundedRect(x, y, w, h, 2, 2, 'FD');
+                };
+
+                // Helper: Capture chart as JPEG (smaller file size)
+                const captureChart = async (canvasId) => {
+                    const canvas = document.getElementById(canvasId);
+                    if (!canvas || canvas.tagName !== 'CANVAS') return null;
+                    return canvas.toDataURL('image/jpeg', 0.8);
+                };
+
+                // Time range labels
+                const timeRangeLabels = { '5m': 'Live (Last 5 Minutes)', '1h': 'Last 1 Hour', '24h': 'Last 24 Hours', '7d': 'Last 7 Days', '30d': 'Last 30 Days' };
+
+                // === PAGE 1: Header and Summary ===
+                
+                // Header
+                pdf.setFillColor(...colors.bg);
+                pdf.rect(0, 0, pageWidth, 35, 'F');
+                
+                pdf.setFontSize(20);
+                pdf.setFont('helvetica', 'bold');
+                pdf.setTextColor(...colors.primary);
+                pdf.text('DNS Analytics Report', margin, 20);
+                
+                pdf.setFontSize(10);
+                pdf.setFont('helvetica', 'normal');
+                pdf.setTextColor(...colors.secondary);
+                pdf.text('Time Range: ' + (timeRangeLabels[currentTimeRange] || currentTimeRange), margin, 28);
+                
+                pdf.setFontSize(9);
+                pdf.setTextColor(...colors.tertiary);
+                pdf.text('Generated: ' + new Date().toLocaleString(), pageWidth - margin, 20, { align: 'right' });
+                
+                yPos = 45;
+
+                // Summary Statistics Cards
+                const totalQueries = document.getElementById('totalQueries').textContent;
+                const allowedQueries = document.getElementById('allowedQueries').textContent;
+                const blockedQueries = document.getElementById('blockedQueries').textContent;
+                const allowedPercent = document.getElementById('allowedPercent').textContent;
+                const blockedPercent = document.getElementById('blockedPercent').textContent;
+                const topCountryQueries = document.getElementById('topCountryQueries').textContent;
+                const topCountryQueriesCount = document.getElementById('topCountryQueriesCount').textContent;
+                const topCountryBlocked = document.getElementById('topCountryBlocked').textContent;
+                const topCountryBlockedCount = document.getElementById('topCountryBlockedCount').textContent;
+
+                // Draw summary cards in a row
+                const cardWidth = (contentWidth - 12) / 3;
+                const cardHeight = 28;
+                
+                // Total Queries Card
+                drawCard(margin, yPos, cardWidth, cardHeight);
+                pdf.setFontSize(8);
+                pdf.setTextColor(...colors.tertiary);
+                pdf.text('TOTAL QUERIES', margin + 4, yPos + 8);
+                pdf.setFontSize(16);
+                pdf.setFont('helvetica', 'bold');
+                pdf.setTextColor(...colors.primary);
+                pdf.text(totalQueries, margin + 4, yPos + 20);
+
+                // Allowed Queries Card
+                drawCard(margin + cardWidth + 6, yPos, cardWidth, cardHeight);
+                pdf.setFontSize(8);
+                pdf.setFont('helvetica', 'normal');
+                pdf.setTextColor(...colors.tertiary);
+                pdf.text('ALLOWED QUERIES', margin + cardWidth + 10, yPos + 8);
+                pdf.setFontSize(16);
+                pdf.setFont('helvetica', 'bold');
+                pdf.setTextColor(...colors.success);
+                pdf.text(allowedQueries, margin + cardWidth + 10, yPos + 20);
+                pdf.setFontSize(8);
+                pdf.setFont('helvetica', 'normal');
+                pdf.setTextColor(...colors.tertiary);
+                pdf.text(allowedPercent, margin + cardWidth + 10, yPos + 25);
+
+                // Blocked Queries Card
+                drawCard(margin + (cardWidth + 6) * 2, yPos, cardWidth, cardHeight);
+                pdf.setFontSize(8);
+                pdf.setFont('helvetica', 'normal');
+                pdf.setTextColor(...colors.tertiary);
+                pdf.text('BLOCKED QUERIES', margin + (cardWidth + 6) * 2 + 4, yPos + 8);
+                pdf.setFontSize(16);
+                pdf.setFont('helvetica', 'bold');
+                pdf.setTextColor(...colors.error);
+                pdf.text(blockedQueries, margin + (cardWidth + 6) * 2 + 4, yPos + 20);
+                pdf.setFontSize(8);
+                pdf.setFont('helvetica', 'normal');
+                pdf.setTextColor(...colors.tertiary);
+                pdf.text(blockedPercent, margin + (cardWidth + 6) * 2 + 4, yPos + 25);
+
+                yPos += cardHeight + 8;
+
+                // Second row: Geo stats
+                const halfWidth = (contentWidth - 6) / 2;
+                drawCard(margin, yPos, halfWidth, 22);
+                pdf.setFontSize(8);
+                pdf.setTextColor(...colors.tertiary);
+                pdf.text('TOP QUERY SOURCE GEO', margin + 4, yPos + 8);
+                pdf.setFontSize(12);
+                pdf.setFont('helvetica', 'bold');
+                pdf.setTextColor(...colors.primary);
+                pdf.text(topCountryQueries, margin + 4, yPos + 16);
+                pdf.setFontSize(8);
+                pdf.setFont('helvetica', 'normal');
+                pdf.setTextColor(...colors.tertiary);
+                pdf.text(topCountryQueriesCount, margin + 30, yPos + 16);
+
+                drawCard(margin + halfWidth + 6, yPos, halfWidth, 22);
+                pdf.setFontSize(8);
+                pdf.setTextColor(...colors.tertiary);
+                pdf.text('TOP BLOCKED SOURCE GEO', margin + halfWidth + 10, yPos + 8);
+                pdf.setFontSize(12);
+                pdf.setFont('helvetica', 'bold');
+                pdf.setTextColor(...colors.error);
+                pdf.text(topCountryBlocked, margin + halfWidth + 10, yPos + 16);
+                pdf.setFontSize(8);
+                pdf.setFont('helvetica', 'normal');
+                pdf.setTextColor(...colors.tertiary);
+                pdf.text(topCountryBlockedCount, margin + halfWidth + 36, yPos + 16);
+
+                yPos += 30;
+
+                // Charts configuration
+                const charts = [
+                    { id: 'timelineChart', title: 'DNS Query Timeline', height: 50 },
+                    { id: 'geographyChart', title: 'DNS Queries by Geography', height: 55 },
+                    { id: 'categoryChart', title: 'DNS Queries by Category', height: 55 },
+                    { id: 'actionBreakdownChart', title: 'DNS Action Breakdown', height: 50 },
+                    { id: 'applicationsPieChart', title: 'Application Summary', height: 50 },
+                    { id: 'allowedChart', title: 'Top 20 Allowed Categories', height: 70 },
+                    { id: 'blockedChart', title: 'Top 20 Blocked Categories', height: 70 },
+                    { id: 'queriesChart', title: 'Top 20 Queried Domains', height: 70 },
+                    { id: 'blockedDomainsChart', title: 'Top 20 Blocked Domains', height: 70 },
+                    { id: 'newlyObservedChart', title: 'Newly Observed Domains', height: 70 }
+                ];
+
+                // Add charts
+                for (const chart of charts) {
+                    const imgData = await captureChart(chart.id);
+                    if (!imgData) continue;
+
+                    const chartHeight = chart.height;
+                    checkPageBreak(chartHeight + 15);
+
+                    // Chart title
+                    pdf.setFontSize(11);
+                    pdf.setFont('helvetica', 'bold');
+                    pdf.setTextColor(...colors.primary);
+                    pdf.text(chart.title, margin, yPos);
+                    yPos += 5;
+
+                    // Chart card
+                    drawCard(margin, yPos, contentWidth, chartHeight);
+                    
+                    // Add chart image
+                    try {
+                        pdf.addImage(imgData, 'JPEG', margin + 2, yPos + 2, contentWidth - 4, chartHeight - 4);
+                    } catch (e) {
+                        console.warn('Could not add chart:', chart.id);
+                    }
+                    
+                    yPos += chartHeight + 8;
+                }
+
+                // Footer on each page
+                const totalPages = pdf.internal.getNumberOfPages();
+                for (let i = 1; i <= totalPages; i++) {
+                    pdf.setPage(i);
+                    pdf.setFontSize(8);
+                    pdf.setTextColor(...colors.tertiary);
+                    pdf.text('DNS Analytics Report - Page ' + i + ' of ' + totalPages, margin, pageHeight - 8);
+                    pdf.text('Generated by Cloudflare Zero Trust Dashboard', pageWidth - margin, pageHeight - 8, { align: 'right' });
                 }
 
                 // Save PDF
@@ -2653,14 +2758,6 @@
             } catch (error) {
                 console.error('PDF generation error:', error);
                 alert('Failed to generate PDF. Please try again.');
-                
-                // Restore elements on error
-                const header = document.querySelector('header');
-                const controls = document.querySelector('.controls');
-                const pdfHeader = document.getElementById('pdfHeader');
-                if (header) header.style.display = '';
-                if (controls) controls.style.display = '';
-                if (pdfHeader) pdfHeader.remove();
             } finally {
                 pdfBtn.innerHTML = originalText;
                 pdfBtn.disabled = false;
