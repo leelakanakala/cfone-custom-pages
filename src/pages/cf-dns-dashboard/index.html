@@ -8,6 +8,8 @@
 <link rel="icon" type="image/svg+xml" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 120 53'%3E%3Cpath d='M82.4133 49.8717C83.1507 47.4123 82.8698 45.1578 81.6408 43.484C80.5171 41.9469 78.621 41.0588 76.3385 40.9563L33.1128 40.4097C32.8319 40.4097 32.5861 40.2731 32.4456 40.0682C32.3052 39.8632 32.2701 39.5899 32.3403 39.3167C32.4808 38.9068 32.9021 38.5993 33.3586 38.5652L76.9706 38.0186C82.1324 37.7795 87.7507 33.7146 89.7171 28.7275L92.2102 22.4081C92.3156 22.1348 92.3507 21.8616 92.2804 21.5883C89.4713 9.22285 78.1294 0 64.5752 0C52.0745 0 41.47 7.8565 37.6777 18.7531C35.2197 16.9769 32.0945 16.0204 28.7235 16.3279C22.719 16.9086 17.9083 21.5883 17.3114 27.4294C17.1709 28.9324 17.2762 30.4012 17.6274 31.7676C7.83049 32.0409 0 39.8291 0 49.4277C0 50.2816 0.0702286 51.1356 0.175572 51.9896C0.2458 52.3995 0.596941 52.7069 1.01831 52.7069H80.7981C81.2545 52.7069 81.6759 52.3995 81.8164 51.9554L82.4133 49.8717Z' fill='%23F38020'/%3E%3Cpath d='M96.1781 22.8521C95.7918 22.8521 95.3704 22.852 94.9842 22.8862C94.7033 22.8862 94.4575 23.0912 94.3521 23.3644L92.6667 29.0689C91.9293 31.5284 92.2102 33.7828 93.4392 35.4566C94.5628 36.9938 96.459 37.8819 98.7414 37.9844L107.941 38.5309C108.222 38.5309 108.468 38.6675 108.609 38.8725C108.749 39.0774 108.784 39.3849 108.714 39.624C108.573 40.0339 108.152 40.3413 107.696 40.3755L98.1094 40.922C92.9125 41.1611 87.3293 45.226 85.3629 50.2132L84.6606 51.9553C84.5201 52.2969 84.7659 52.6384 85.1522 52.6384H118.089C118.476 52.6384 118.827 52.3993 118.932 52.0236C119.494 50.0424 119.81 47.9587 119.81 45.8067C119.81 33.168 109.205 22.8521 96.1781 22.8521Z' fill='%23FAAE40'/%3E%3C/svg%3E">
 <script src="https://cdn.tailwindcss.com"></script>
 <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.0/dist/chart.umd.min.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/html2canvas/1.4.1/html2canvas.min.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
 <link href="https://fonts.googleapis.com/css2?family=Roboto+Mono:wght@400;500;600;700&display=swap" rel="stylesheet">
 <style>
     * {
@@ -544,6 +546,10 @@
                         <button class="btn" onclick="changeTimeRange('24h')">Last 24 Hours</button>
                         <button class="btn active" onclick="changeTimeRange('7d')">Last 7 Days</button>
                         <button class="btn" onclick="changeTimeRange('30d')">Last 30 Days</button>
+                        <span style="border-left: 1px solid var(--border-primary); height: 24px; margin: 0 4px;"></span>
+                        <button class="btn" onclick="generatePDFReport()" id="pdfBtn" style="background: var(--accent-primary); color: white;">
+                            📄 Export PDF
+                        </button>
                     </div>
                 </div>
                 <div id="liveStatus" style="display: none; text-align: center; margin-bottom: 12px; font-family: 'Roboto Mono', monospace; font-size: 0.8rem; color: var(--text-secondary);">
@@ -925,7 +931,7 @@
             if (geoBlockedData && geoBlockedData.length > 0) {
                 const topBlocked = geoBlockedData[0];
                 document.getElementById('topCountryBlocked').textContent = topBlocked.country;
-                document.getElementById('topCountryBlockedCount').textContent = topBlocked.count.toLocaleString() + ' blocked';
+                document.getElementById('topCountryBlockedCount').textContent = topBlocked.count.toLocaleString() + ' queries blocked';
             } else {
                 document.getElementById('topCountryBlocked').textContent = 'None';
                 document.getElementById('topCountryBlockedCount').textContent = 'All clear!';
@@ -1428,6 +1434,9 @@
                             titleFont: { family: "'Roboto Mono', monospace" },
                             bodyFont: { family: "'Roboto Mono', monospace" },
                             callbacks: {
+                                label: function(context) {
+                                    return 'Blocked: ' + context.raw.toLocaleString() + ' queries';
+                                },
                                 afterBody: function(context) {
                                     const index = context[0].dataIndex;
                                     const categories = chartData[index]?.categories || [];
@@ -2523,6 +2532,188 @@
             allLogs = [];
             lastLogTimestamp = null;
             renderLogs();
+        }
+
+        // PDF Report Generation
+        async function generatePDFReport() {
+            const pdfBtn = document.getElementById('pdfBtn');
+            const originalText = pdfBtn.innerHTML;
+            pdfBtn.innerHTML = '⏳ Generating...';
+            pdfBtn.disabled = true;
+
+            try {
+                const { jsPDF } = window.jspdf;
+                const pdf = new jsPDF('p', 'mm', 'a4');
+                const pageWidth = pdf.internal.pageSize.getWidth();
+                const pageHeight = pdf.internal.pageSize.getHeight();
+                const margin = 15;
+                let yPos = margin;
+
+                // Helper function to add text with word wrap
+                const addWrappedText = (text, x, y, maxWidth, fontSize = 10) => {
+                    pdf.setFontSize(fontSize);
+                    const lines = pdf.splitTextToSize(text, maxWidth);
+                    pdf.text(lines, x, y);
+                    return y + (lines.length * fontSize * 0.4);
+                };
+
+                // Helper to check page break
+                const checkPageBreak = (neededHeight) => {
+                    if (yPos + neededHeight > pageHeight - margin) {
+                        pdf.addPage();
+                        yPos = margin;
+                        return true;
+                    }
+                    return false;
+                };
+
+                // Title
+                pdf.setFontSize(20);
+                pdf.setFont('helvetica', 'bold');
+                pdf.text('DNS Analytics Report', margin, yPos);
+                yPos += 10;
+
+                // Metadata
+                pdf.setFontSize(10);
+                pdf.setFont('helvetica', 'normal');
+                const timeRangeLabels = { '5m': 'Live (Last 5 Minutes)', '1h': 'Last 1 Hour', '24h': 'Last 24 Hours', '7d': 'Last 7 Days', '30d': 'Last 30 Days' };
+                pdf.text('Time Range: ' + (timeRangeLabels[currentTimeRange] || currentTimeRange), margin, yPos);
+                yPos += 5;
+                pdf.text('Generated: ' + new Date().toLocaleString(), margin, yPos);
+                yPos += 10;
+
+                // Summary Statistics
+                pdf.setFontSize(14);
+                pdf.setFont('helvetica', 'bold');
+                pdf.text('Summary Statistics', margin, yPos);
+                yPos += 7;
+
+                pdf.setFontSize(10);
+                pdf.setFont('helvetica', 'normal');
+                const totalQueries = document.getElementById('totalQueries').textContent;
+                const allowedQueries = document.getElementById('allowedQueries').textContent;
+                const blockedQueries = document.getElementById('blockedQueries').textContent;
+                const allowedPercent = document.getElementById('allowedPercent').textContent;
+                const blockedPercent = document.getElementById('blockedPercent').textContent;
+
+                pdf.text('Total Queries: ' + totalQueries, margin, yPos);
+                yPos += 5;
+                pdf.text('Allowed Queries: ' + allowedQueries + ' (' + allowedPercent + ')', margin, yPos);
+                yPos += 5;
+                pdf.text('Blocked Queries: ' + blockedQueries + ' (' + blockedPercent + ')', margin, yPos);
+                yPos += 5;
+
+                const topCountryQueries = document.getElementById('topCountryQueries').textContent;
+                const topCountryBlocked = document.getElementById('topCountryBlocked').textContent;
+                pdf.text('Top Query Source: ' + topCountryQueries, margin, yPos);
+                yPos += 5;
+                pdf.text('Top Blocked Source: ' + topCountryBlocked, margin, yPos);
+                yPos += 10;
+
+                // Chart summaries with descriptions
+                const chartSections = [
+                    {
+                        id: 'timelineChart',
+                        title: 'DNS Query Timeline',
+                        summary: 'Shows the volume of DNS queries over time. Spikes may indicate unusual activity, while consistent patterns suggest normal usage. Use this to identify traffic anomalies and peak usage periods.'
+                    },
+                    {
+                        id: 'allowedChart',
+                        title: 'Top 20 Allowed Categories',
+                        summary: 'Displays the most frequently accessed content categories that were permitted by your security policies. High counts in business-related categories indicate productive usage.'
+                    },
+                    {
+                        id: 'blockedChart',
+                        title: 'Top 20 Blocked Categories',
+                        summary: 'Shows content categories that were blocked by security policies. Review these to understand what threats are being prevented and if policies need adjustment.'
+                    },
+                    {
+                        id: 'queriesChart',
+                        title: 'Top 20 Queried Domains',
+                        summary: 'Lists the most frequently queried domain names. Unusual domains with high query counts may warrant investigation for potential security concerns.'
+                    },
+                    {
+                        id: 'blockedDomainsChart',
+                        title: 'Top 20 Blocked Domains',
+                        summary: 'Shows specific domains that were blocked. Review these to identify potential threats or adjust policies if legitimate domains are being blocked.'
+                    },
+                    {
+                        id: 'newlyObservedChart',
+                        title: 'Newly Observed Domains',
+                        summary: 'Domains queried for the first time in this period. New domains can indicate legitimate new services or potential threats requiring investigation.'
+                    },
+                    {
+                        id: 'geographyChart',
+                        title: 'Query Geography Distribution',
+                        summary: 'Geographic distribution of DNS query sources. Unexpected countries with high query volumes may indicate compromised devices or VPN usage.'
+                    },
+                    {
+                        id: 'categoryChart',
+                        title: 'Category Analysis',
+                        summary: 'Breakdown of all DNS queries by content category. Provides insight into overall network usage patterns and content consumption.'
+                    },
+                    {
+                        id: 'actionBreakdownChart',
+                        title: 'Action Breakdown',
+                        summary: 'Pie chart showing the proportion of allowed vs blocked queries. A healthy network typically shows mostly allowed traffic with targeted blocks.'
+                    },
+                    {
+                        id: 'applicationsPieChart',
+                        title: 'Application Analysis',
+                        summary: 'Distribution of DNS queries by application type. Helps identify which applications are generating the most DNS traffic.'
+                    }
+                ];
+
+                for (const section of chartSections) {
+                    const canvas = document.getElementById(section.id);
+                    if (!canvas || canvas.tagName !== 'CANVAS') continue;
+
+                    checkPageBreak(80);
+
+                    // Section title
+                    pdf.setFontSize(12);
+                    pdf.setFont('helvetica', 'bold');
+                    pdf.text(section.title, margin, yPos);
+                    yPos += 5;
+
+                    // Summary text
+                    pdf.setFontSize(9);
+                    pdf.setFont('helvetica', 'italic');
+                    yPos = addWrappedText(section.summary, margin, yPos, pageWidth - (margin * 2), 9);
+                    yPos += 3;
+
+                    // Capture chart as image
+                    try {
+                        const imgData = canvas.toDataURL('image/png', 1.0);
+                        const imgWidth = pageWidth - (margin * 2);
+                        const imgHeight = (canvas.height / canvas.width) * imgWidth;
+                        const finalHeight = Math.min(imgHeight, 60);
+
+                        checkPageBreak(finalHeight + 10);
+                        pdf.addImage(imgData, 'PNG', margin, yPos, imgWidth, finalHeight);
+                        yPos += finalHeight + 10;
+                    } catch (e) {
+                        console.warn('Could not capture chart:', section.id, e);
+                        yPos += 5;
+                    }
+                }
+
+                // Footer on last page
+                pdf.setFontSize(8);
+                pdf.setFont('helvetica', 'normal');
+                pdf.text('Generated by DNS Analytics Dashboard', margin, pageHeight - 10);
+
+                // Save PDF
+                const filename = 'dns-report-' + currentTimeRange + '-' + new Date().toISOString().split('T')[0] + '.pdf';
+                pdf.save(filename);
+
+            } catch (error) {
+                console.error('PDF generation error:', error);
+                alert('Failed to generate PDF. Please try again.');
+            } finally {
+                pdfBtn.innerHTML = originalText;
+                pdfBtn.disabled = false;
+            }
         }
 
         loadDashboardData('7d');
