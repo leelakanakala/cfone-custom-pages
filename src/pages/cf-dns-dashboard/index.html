@@ -2548,16 +2548,27 @@
                 // A4 dimensions and margins
                 const pageWidth = 210;
                 const pageHeight = 297;
-                const margin = 12;
+                const margin = 15;
                 const contentWidth = pageWidth - (margin * 2);
                 let yPos = margin;
 
                 // Time range labels
                 const timeRangeLabels = { '5m': 'Live (Last 5 Minutes)', '1h': 'Last 1 Hour', '24h': 'Last 24 Hours', '7d': 'Last 7 Days', '30d': 'Last 30 Days' };
 
+                // Format date: "13 February 2026, 9:43:04 AM SGT"
+                const formatDate = () => {
+                    const now = new Date();
+                    const day = now.getDate();
+                    const month = now.toLocaleString('en-US', { month: 'long' });
+                    const year = now.getFullYear();
+                    const time = now.toLocaleString('en-US', { hour: 'numeric', minute: '2-digit', second: '2-digit', hour12: true });
+                    const tz = Intl.DateTimeFormat().resolvedOptions().timeZone.split('/').pop().replace('_', ' ');
+                    return `${day} ${month} ${year}, ${time} (${tz})`;
+                };
+
                 // Helper: Add new page if needed
                 const checkPageBreak = (neededHeight) => {
-                    if (yPos + neededHeight > pageHeight - margin - 10) {
+                    if (yPos + neededHeight > pageHeight - 20) {
                         pdf.addPage();
                         yPos = margin;
                         return true;
@@ -2576,7 +2587,7 @@
                             backgroundColor: '#ffffff'
                         });
                         return {
-                            data: canvas.toDataURL('image/jpeg', 0.92),
+                            data: canvas.toDataURL('image/jpeg', 0.9),
                             width: canvas.width,
                             height: canvas.height
                         };
@@ -2586,173 +2597,140 @@
                     }
                 };
 
-                // === HEADER WITH CLOUDFLARE BRANDING ===
-                // Orange gradient header bar
-                pdf.setFillColor(243, 128, 32); // Cloudflare orange
-                pdf.rect(0, 0, pageWidth, 3, 'F');
+                // === HEADER WITH CORP BRANDING ===
+                // Get favicon and convert to data URL
+                const favicon = document.querySelector('link[rel="icon"]');
+                const faviconUrl = favicon ? favicon.href : '';
+                
+                // Orange accent bar
+                pdf.setFillColor(243, 128, 32);
+                pdf.rect(0, 0, pageWidth, 2, 'F');
                 
                 // Header background
-                pdf.setFillColor(249, 250, 251);
-                pdf.rect(0, 3, pageWidth, 32, 'F');
+                pdf.setFillColor(255, 255, 255);
+                pdf.rect(0, 2, pageWidth, 28, 'F');
                 
-                // Cloudflare logo text (simplified)
-                pdf.setFontSize(10);
-                pdf.setFont('helvetica', 'bold');
-                pdf.setTextColor(243, 128, 32);
-                pdf.text('cloudflare', margin, 14);
-                pdf.setTextColor(107, 114, 128);
-                pdf.setFont('helvetica', 'normal');
-                pdf.setFontSize(8);
-                pdf.text('Zero Trust', margin + 24, 14);
-                
-                // Report title
-                pdf.setFontSize(18);
+                // Corp name from title
+                const pageTitle = document.title.split(' - ').pop() || 'Zero Security Corp';
+                pdf.setFontSize(11);
                 pdf.setFont('helvetica', 'bold');
                 pdf.setTextColor(17, 24, 39);
-                pdf.text('DNS Analytics Report', margin, 26);
+                pdf.text(pageTitle, margin, 14);
+                
+                // Report title
+                pdf.setFontSize(16);
+                pdf.setFont('helvetica', 'bold');
+                pdf.setTextColor(17, 24, 39);
+                pdf.text('DNS Analytics Report', margin, 24);
                 
                 pdf.setFontSize(9);
                 pdf.setFont('helvetica', 'normal');
-                pdf.setTextColor(75, 85, 99);
-                pdf.text('Time Range: ' + (timeRangeLabels[currentTimeRange] || currentTimeRange), margin, 32);
-                
-                // Generation date on right
-                pdf.setFontSize(8);
                 pdf.setTextColor(107, 114, 128);
-                pdf.text('Generated: ' + new Date().toLocaleString(), pageWidth - margin, 14, { align: 'right' });
+                pdf.text('Time Range: ' + (timeRangeLabels[currentTimeRange] || currentTimeRange), margin, 30);
                 
-                yPos = 42;
+                yPos = 38;
 
-                // === CAPTURE SIDEBAR STATS ===
-                const sidebar = document.querySelector('.container > div > div:first-child');
-                if (sidebar) {
-                    const sidebarImg = await captureElement(sidebar);
-                    if (sidebarImg) {
-                        const imgHeight = (sidebarImg.height / sidebarImg.width) * 50;
-                        pdf.addImage(sidebarImg.data, 'JPEG', margin, yPos, 50, Math.min(imgHeight, 80));
-                    }
-                }
-
-                // === CAPTURE MAIN CHARTS ===
-                // Get all card elements
-                const cards = document.querySelectorAll('.card');
-                const capturedCards = [];
-                
+                // === CAPTURE AND ADD CHARTS ===
                 // Hide info buttons temporarily
                 const infoButtons = document.querySelectorAll('.info-btn');
                 infoButtons.forEach(btn => btn.style.visibility = 'hidden');
-                
-                // Capture each card
-                for (const card of cards) {
-                    // Skip live logs container
-                    if (card.closest('#liveLogsContainer')) continue;
-                    
-                    const img = await captureElement(card);
-                    if (img) {
-                        capturedCards.push(img);
+
+                // Capture summary stats section
+                const statsSection = document.querySelector('.container > div > div:first-child');
+                if (statsSection) {
+                    const statsImg = await captureElement(statsSection);
+                    if (statsImg) {
+                        const aspectRatio = statsImg.width / statsImg.height;
+                        const imgWidth = 55;
+                        const imgHeight = imgWidth / aspectRatio;
+                        pdf.addImage(statsImg.data, 'JPEG', margin, yPos, imgWidth, Math.min(imgHeight, 70));
                     }
                 }
-                
+
+                // Capture timeline chart (full width)
+                const timelineCard = document.querySelector('#timelineChart')?.closest('.card');
+                if (timelineCard) {
+                    const img = await captureElement(timelineCard);
+                    if (img) {
+                        const aspectRatio = img.width / img.height;
+                        const imgWidth = contentWidth - 60;
+                        const imgHeight = imgWidth / aspectRatio;
+                        pdf.addImage(img.data, 'JPEG', margin + 58, yPos, imgWidth, Math.min(imgHeight, 50));
+                        yPos += Math.min(imgHeight, 50) + 4;
+                    }
+                }
+
+                yPos = Math.max(yPos, 95);
+
+                // Define chart pairs for side-by-side layout
+                const chartPairs = [
+                    ['#geographyChart', '#categoryFilteredChart'],
+                    ['#actionBreakdownChart', '#applicationsPieChart'],
+                    ['#allowedChart', '#blockedChart'],
+                    ['#queriesChart', '#blockedDomainsChart'],
+                    ['#newlyObservedChart', null]
+                ];
+
+                const halfWidth = (contentWidth - 4) / 2;
+
+                for (const [leftSelector, rightSelector] of chartPairs) {
+                    const leftCard = document.querySelector(leftSelector)?.closest('.card');
+                    const rightCard = rightSelector ? document.querySelector(rightSelector)?.closest('.card') : null;
+                    
+                    let maxHeight = 0;
+                    const leftImg = leftCard ? await captureElement(leftCard) : null;
+                    const rightImg = rightCard ? await captureElement(rightCard) : null;
+
+                    // Calculate heights
+                    let leftHeight = 0, rightHeight = 0;
+                    if (leftImg) {
+                        const aspectRatio = leftImg.width / leftImg.height;
+                        leftHeight = halfWidth / aspectRatio;
+                        if (leftHeight > 65) leftHeight = 65;
+                    }
+                    if (rightImg) {
+                        const aspectRatio = rightImg.width / rightImg.height;
+                        rightHeight = halfWidth / aspectRatio;
+                        if (rightHeight > 65) rightHeight = 65;
+                    }
+                    maxHeight = Math.max(leftHeight, rightHeight);
+
+                    // Check page break
+                    checkPageBreak(maxHeight + 5);
+
+                    // Add images side by side
+                    if (leftImg) {
+                        const aspectRatio = leftImg.width / leftImg.height;
+                        const imgWidth = rightImg ? halfWidth : contentWidth;
+                        const imgHeight = Math.min(imgWidth / aspectRatio, 65);
+                        pdf.addImage(leftImg.data, 'JPEG', margin, yPos, imgWidth, imgHeight);
+                    }
+                    if (rightImg) {
+                        const aspectRatio = rightImg.width / rightImg.height;
+                        const imgHeight = Math.min(halfWidth / aspectRatio, 65);
+                        pdf.addImage(rightImg.data, 'JPEG', margin + halfWidth + 4, yPos, halfWidth, imgHeight);
+                    }
+
+                    yPos += maxHeight + 5;
+                }
+
                 // Restore info buttons
                 infoButtons.forEach(btn => btn.style.visibility = '');
 
-                // Start fresh for charts (after summary)
-                yPos = 42;
-                
-                // Summary stats row
-                const totalQueries = document.getElementById('totalQueries').textContent;
-                const allowedQueries = document.getElementById('allowedQueries').textContent;
-                const blockedQueries = document.getElementById('blockedQueries').textContent;
-                const allowedPercent = document.getElementById('allowedPercent').textContent;
-                const blockedPercent = document.getElementById('blockedPercent').textContent;
-                const topCountryQueries = document.getElementById('topCountryQueries').textContent;
-                const topCountryQueriesCount = document.getElementById('topCountryQueriesCount').textContent;
-                const topCountryBlocked = document.getElementById('topCountryBlocked').textContent;
-                const topCountryBlockedCount = document.getElementById('topCountryBlockedCount').textContent;
-
-                // Draw summary cards
-                const drawSummaryCard = (x, y, w, h, title, value, subtitle, valueColor) => {
-                    pdf.setFillColor(255, 255, 255);
-                    pdf.setDrawColor(229, 231, 235);
-                    pdf.roundedRect(x, y, w, h, 2, 2, 'FD');
-                    
-                    pdf.setFontSize(7);
-                    pdf.setFont('helvetica', 'normal');
-                    pdf.setTextColor(107, 114, 128);
-                    pdf.text(title, x + 4, y + 7);
-                    
-                    pdf.setFontSize(14);
-                    pdf.setFont('helvetica', 'bold');
-                    pdf.setTextColor(...valueColor);
-                    pdf.text(value, x + 4, y + 17);
-                    
-                    if (subtitle) {
-                        pdf.setFontSize(7);
-                        pdf.setFont('helvetica', 'normal');
-                        pdf.setTextColor(107, 114, 128);
-                        pdf.text(subtitle, x + 4, y + 22);
-                    }
-                };
-
-                const cardW = (contentWidth - 8) / 3;
-                drawSummaryCard(margin, yPos, cardW, 26, 'TOTAL QUERIES', totalQueries, '', [17, 24, 39]);
-                drawSummaryCard(margin + cardW + 4, yPos, cardW, 26, 'ALLOWED QUERIES', allowedQueries, allowedPercent, [16, 185, 129]);
-                drawSummaryCard(margin + (cardW + 4) * 2, yPos, cardW, 26, 'BLOCKED QUERIES', blockedQueries, blockedPercent, [220, 38, 38]);
-                
-                yPos += 30;
-
-                // Geo stats row
-                const halfW = (contentWidth - 4) / 2;
-                drawSummaryCard(margin, yPos, halfW, 20, 'TOP QUERY SOURCE GEO', topCountryQueries + '  ' + topCountryQueriesCount, '', [17, 24, 39]);
-                drawSummaryCard(margin + halfW + 4, yPos, halfW, 20, 'TOP BLOCKED SOURCE GEO', topCountryBlocked + '  ' + topCountryBlockedCount, '', [220, 38, 38]);
-                
-                yPos += 26;
-
-                // Add captured cards to PDF
-                for (let i = 0; i < capturedCards.length; i++) {
-                    const img = capturedCards[i];
-                    
-                    // Calculate dimensions maintaining aspect ratio
-                    const aspectRatio = img.width / img.height;
-                    let imgWidth = contentWidth;
-                    let imgHeight = imgWidth / aspectRatio;
-                    
-                    // Limit max height
-                    if (imgHeight > 100) {
-                        imgHeight = 100;
-                        imgWidth = imgHeight * aspectRatio;
-                    }
-                    
-                    // Check page break
-                    checkPageBreak(imgHeight + 5);
-                    
-                    // Add image
-                    pdf.addImage(img.data, 'JPEG', margin, yPos, imgWidth, imgHeight);
-                    yPos += imgHeight + 6;
-                }
-
-                // Footer on each page
+                // Footer on each page - just page number
                 const totalPages = pdf.internal.getNumberOfPages();
                 for (let i = 1; i <= totalPages; i++) {
                     pdf.setPage(i);
-                    
-                    // Footer line
-                    pdf.setDrawColor(229, 231, 235);
-                    pdf.line(margin, pageHeight - 12, pageWidth - margin, pageHeight - 12);
-                    
-                    // Footer text
-                    pdf.setFontSize(7);
-                    pdf.setTextColor(107, 114, 128);
-                    pdf.text('DNS Analytics Report', margin, pageHeight - 7);
-                    pdf.text('Page ' + i + ' of ' + totalPages, pageWidth / 2, pageHeight - 7, { align: 'center' });
-                    
-                    // Cloudflare branding
-                    pdf.setTextColor(243, 128, 32);
-                    pdf.setFont('helvetica', 'bold');
-                    pdf.text('cloudflare', pageWidth - margin - 20, pageHeight - 7);
-                    pdf.setTextColor(107, 114, 128);
+                    pdf.setFontSize(8);
                     pdf.setFont('helvetica', 'normal');
-                    pdf.text('Zero Trust', pageWidth - margin, pageHeight - 7);
+                    pdf.setTextColor(156, 163, 175);
+                    pdf.text('Page ' + i + ' of ' + totalPages, pageWidth / 2, pageHeight - 10, { align: 'center' });
+                    
+                    // Add generation date only on last page
+                    if (i === totalPages) {
+                        pdf.setFontSize(7);
+                        pdf.text('Generated: ' + formatDate(), pageWidth / 2, pageHeight - 6, { align: 'center' });
+                    }
                 }
 
                 // Save PDF
