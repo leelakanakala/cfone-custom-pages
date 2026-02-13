@@ -87,9 +87,56 @@ if (path === '/cf-access/api/userdetails') {
 ### Key Functions
 
 **handleUserDetails(request, env)**
-- Extracts device_id from JWT
-- Fetches identity, device details, posture data
-- Returns unified JSON response
+
+Combines identity, device, and posture data into a single API response.
+
+**Flow:**
+1. Validates `Cf-Access-Jwt-Assertion` header (returns 401 if missing)
+2. Extracts `device_id` from JWT payload using `getDeviceIdFromToken()`
+3. Fetches identity data from `/cdn-cgi/access/get-identity`
+4. Extracts `account_id` from identity response
+5. If `BEARER_TOKEN` is configured, fetches device and posture data from Cloudflare API
+6. Returns combined JSON response
+
+**Required Variables:**
+| Variable | Source | Description |
+|----------|--------|-------------|
+| `jwtAssertion` | `Cf-Access-Jwt-Assertion` header | JWT token added by Cloudflare Access |
+| `device_id` | JWT payload or identity data | Unique device identifier |
+| `account_id` | Identity response | Cloudflare account ID |
+| `BEARER_TOKEN` | Worker secret (env) | API token for Cloudflare API calls |
+
+**API Calls Made:**
+
+1. **Identity API** (always called)
+   ```
+   GET /cdn-cgi/access/get-identity
+   Headers: Cookie (CF_Authorization forwarded)
+   Returns: User email, name, groups, device sessions, account_id
+   ```
+
+2. **Device Details API** (requires BEARER_TOKEN)
+   ```
+   GET https://api.cloudflare.com/client/v4/accounts/{account_id}/devices/{device_id}
+   Headers: Authorization: Bearer {BEARER_TOKEN}
+   Returns: Device name, model, OS version, serial number, manufacturer
+   ```
+
+3. **Device Posture API** (requires BEARER_TOKEN)
+   ```
+   GET https://api.cloudflare.com/client/v4/accounts/{account_id}/devices/{device_id}/posture/check
+   Headers: Authorization: Bearer {BEARER_TOKEN}
+   Returns: Posture check results (Crowdstrike, OS version, disk encryption, etc.)
+   ```
+
+**Response Structure:**
+```json
+{
+  "identity": { "email": "...", "name": "...", "groups": [...], "account_id": "..." },
+  "device": { "name": "...", "model": "...", "os_version": "...", "serial_number": "..." },
+  "posture": { "result": [...] }
+}
+```
 
 **handleLiveLogs(request, env)**
 - Queries GraphQL for recent DNS logs
