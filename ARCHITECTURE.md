@@ -150,8 +150,43 @@ Combines identity, device, and posture data into a single API response.
 3. **Token security** - Keeps Bearer/API tokens server-side
 4. **Error handling** - Centralized error management
 
+## Codex Frontend Alignment
+
+This project is a vanilla HTML/CSS/JS Worker (not React/Kumo), so React-specific Codex mandates do not apply. However, the following Codex frontend architecture principles have been adopted:
+
+### Semantic HTML
+- All pages use proper landmarks: `<header>`, `<nav>`, `<main>`, `<section>`, `<aside>`, `<footer>`
+- Skip-to-content links on every page for keyboard navigation
+- Tables use `<thead>`, `<tbody>`, and `scope="col"` on headers
+
+### Accessibility (WCAG 2.1 AA)
+- **Focus states**: All interactive elements have `focus-visible` outlines using `var(--accent-primary)`
+- **ARIA attributes**: `aria-label` on buttons/links, `aria-pressed` on toggle buttons, `aria-expanded`/`aria-controls` on collapsibles, `role="dialog"` and `aria-modal` on modals
+- **Keyboard navigation**: Modal focus trap (Tab/Shift+Tab cycles within modal), Escape key closes modals, focus returns to trigger element on close
+- **Screen reader support**: `aria-live="polite"` for live status updates, `role="status"` on loading indicators, `aria-hidden="true"` on decorative SVGs and spacers, `role="alert"` on error banners
+
+### Explicit State Handling
+- **Loading**: Spinner indicators with `role="status"` and descriptive `aria-label`
+- **Error**: User-friendly error messages (never raw error codes/messages); error banner with retry button on the DNS dashboard
+- **Empty**: "No queries found" and "Waiting for DNS queries..." messages for empty states
+
+### Styling
+- Inline styles migrated to named CSS classes (`.nav-brand`, `.nav-title`, `.sidebar`, `.main-content`, `.chart-grid-2`, `.section-group-purple`, etc.)
+- CSS custom properties (design tokens) used consistently across all pages
+- Responsive breakpoints via `@media` queries
+
+### Navigation
+- Semantic `<a href>` for navigation links, `<button>` for actions/mutations
+- Collapsible sections use proper `<button>` elements (not clickable `<h2>` or `<div>`)
+
+### Anti-Patterns Avoided
+- No raw `error.message` or API error codes shown to users
+- No `undefined`-as-loading pattern — explicit loading states everywhere
+- No CSS-in-JS — all styles in `<style>` blocks or Tailwind utilities
+
 ## References
 
 - [Cloudflare Access Documentation](https://developers.cloudflare.com/cloudflare-one/identity/authorization-cookie/)
 - [Workers Documentation](https://developers.cloudflare.com/workers/)
 - [GraphQL Analytics API](https://developers.cloudflare.com/analytics/graphql-api/)
+- [Cloudflare Codex Frontend Guidelines](https://codex.cloudflare.dev/engineering/codex/frontend/)

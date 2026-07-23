@@ -513,6 +513,52 @@
         font-size: 14px;
     }
 
+    /* Focus states — WCAG 2.1 AA */
+    button:focus-visible,
+    a:focus-visible,
+    .primary-button:focus-visible,
+    .theme-toggle:focus-visible {
+        outline: 2px solid var(--accent-primary);
+        outline-offset: 2px;
+    }
+
+    a:focus-visible {
+        border-radius: 4px;
+    }
+
+    /* Skip to content */
+    .skip-link {
+        position: absolute;
+        top: -100%;
+        left: 16px;
+        z-index: 9999;
+        padding: 8px 16px;
+        background: var(--accent-primary);
+        color: white;
+        border-radius: 0 0 6px 6px;
+        font-weight: 600;
+        font-size: 14px;
+        text-decoration: none;
+    }
+
+    .skip-link:focus {
+        top: 0;
+    }
+
+    .debug-toggle-btn {
+        background: none;
+        border: none;
+        padding: 0;
+        cursor: pointer;
+        display: flex;
+        align-items: center;
+        gap: 12px;
+        width: 100%;
+        font: inherit;
+        color: inherit;
+        text-align: left;
+    }
+
     @media (max-width: 768px) {
         .page-header h1 {
             font-size: 28px;
@@ -525,17 +571,18 @@
 </style>
 </head>
 <body>
-<div class="radial-gradient"></div>
+<a href="#main-content" class="skip-link">Skip to main content</a>
+<div class="radial-gradient" aria-hidden="true"></div>
 <header>
-    <nav class="container">
-        <a href="/" class="logo">
+    <nav class="container" aria-label="Primary navigation">
+        <a href="/" class="logo" aria-label="Zero Security Corp home">
             <svg width="120" height="53" viewBox="0 0 120 53" fill="none" xmlns="http://www.w3.org/2000/svg" style="height: 20px; width: auto;">
                 <path d="M82.4133 49.8717C83.1507 47.4123 82.8698 45.1578 81.6408 43.484C80.5171 41.9469 78.621 41.0588 76.3385 40.9563L33.1128 40.4097C32.8319 40.4097 32.5861 40.2731 32.4456 40.0682C32.3052 39.8632 32.2701 39.5899 32.3403 39.3167C32.4808 38.9068 32.9021 38.5993 33.3586 38.5652L76.9706 38.0186C82.1324 37.7795 87.7507 33.7146 89.7171 28.7275L92.2102 22.4081C92.3156 22.1348 92.3507 21.8616 92.2804 21.5883C89.4713 9.22285 78.1294 0 64.5752 0C52.0745 0 41.47 7.8565 37.6777 18.7531C35.2197 16.9769 32.0945 16.0204 28.7235 16.3279C22.719 16.9086 17.9083 21.5883 17.3114 27.4294C17.1709 28.9324 17.2762 30.4012 17.6274 31.7676C7.83049 32.0409 0 39.8291 0 49.4277C0 50.2816 0.0702286 51.1356 0.175572 51.9896C0.2458 52.3995 0.596941 52.7069 1.01831 52.7069H80.7981C81.2545 52.7069 81.6759 52.3995 81.8164 51.9554L82.4133 49.8717Z" fill="#F38020"/>
                 <path d="M96.1781 22.8521C95.7918 22.8521 95.3704 22.852 94.9842 22.8862C94.7033 22.8862 94.4575 23.0912 94.3521 23.3644L92.6667 29.0689C91.9293 31.5284 92.2102 33.7828 93.4392 35.4566C94.5628 36.9938 96.459 37.8819 98.7414 37.9844L107.941 38.5309C108.222 38.5309 108.468 38.6675 108.609 38.8725C108.749 39.0774 108.784 39.3849 108.714 39.624C108.573 40.0339 108.152 40.3413 107.696 40.3755L98.1094 40.922C92.9125 41.1611 87.3293 45.226 85.3629 50.2132L84.6606 51.9553C84.5201 52.2969 84.7659 52.6384 85.1522 52.6384H118.089C118.476 52.6384 118.827 52.3993 118.932 52.0236C119.494 50.0424 119.81 47.9587 119.81 45.8067C119.81 33.168 109.205 22.8521 96.1781 22.8521Z" fill="#FAAE40"/>
             </svg>
-            Zero Security Corp
+            <span>Zero Security Corp</span>
         </a>
-        <button class="theme-toggle" id="theme-toggle" aria-label="Toggle theme">
+        <button class="theme-toggle" id="theme-toggle" aria-label="Toggle color theme">
             <svg id="theme-icon-sun" style="display: none;" fill="none" viewBox="0 0 24 24" stroke="currentColor">
                 <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 3v1m0 16v1m9-9h-1M4 12H3m15.364 6.364l-.707-.707M6.343 6.343l-.707-.707m12.728 0l-.707.707M6.343 17.657l-.707.707M16 12a4 4 0 11-8 0 4 4 0 018 0z" />
             </svg>
@@ -546,7 +593,7 @@
     </nav>
 </header>
 
-<main>
+<main id="main-content">
     <div class="container">
         <div class="info-container">
             <div class="page-header">
@@ -557,7 +604,7 @@
                 </div>
                 <h1 class="text-heading-24 mt-8 mb-4">Access Denied</h1>
                 <p class="text-sm text-gray-900 m-0">Your access attempt has been logged. Review your authentication details and device posture status below. If you believe this is an error, contact IT support.</p>
-                <button role="button" onclick="reloadApplication()" tabindex="0" class="inline-flex items-center justify-center rounded-md px-4 py-2 text-sm font-medium transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-offset-2 disabled:pointer-events-none disabled:opacity-50 text-white hover:opacity-80 focus-visible:ring-red-500" style="margin-top: 20px; --geist-icon-size:16px; background-color: rgba(220, 38, 38, 0.85);">
+                <button onclick="reloadApplication()" class="inline-flex items-center justify-center rounded-md px-4 py-2 text-sm font-medium transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-offset-2 disabled:pointer-events-none disabled:opacity-50 text-white hover:opacity-80 focus-visible:ring-red-500" style="margin-top: 20px; --geist-icon-size:16px; background-color: rgba(220, 38, 38, 0.85);" aria-label="Reload the access application">
                     <svg style="width: 16px; height: 16px; margin-right: 8px;" fill="none" viewBox="0 0 24 24" stroke="currentColor">
                         <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15" />
                     </svg>
@@ -576,7 +623,7 @@
                         <h2 class="text-heading-16 font-medium m-0 w-max whitespace-nowrap overflow-hidden text-ellipsis flex-1 mr-0">User Information</h2>
                     </div>
                     <div class="tile-content" id="warp-content">
-                        <div style="text-align: center; padding: 20px;">
+                        <div style="text-align: center; padding: 20px;" role="status" aria-label="Loading user information">
                             <div class="loading-spinner"></div>
                         </div>
                     </div>
@@ -585,14 +632,14 @@
                 <div class="tile loading" id="device-tile">
                     <div class="tile-header">
                         <div class="tile-icon" style="background: rgba(59, 130, 246, 0.1); border-color: rgba(59, 130, 246, 0.2);">
-                            <svg fill="none" viewBox="0 0 24 24" stroke="currentColor" style="color: #3b82f6;">
+                            <svg fill="none" viewBox="0 0 24 24" stroke="currentColor" style="color: #3b82f6;" aria-hidden="true">
                                 <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 18h.01M8 21h8a2 2 0 002-2V5a2 2 0 00-2-2H8a2 2 0 00-2 2v14a2 2 0 002 2z" />
                             </svg>
                         </div>
                         <h2 class="text-heading-16 font-medium m-0 w-max whitespace-nowrap overflow-hidden text-ellipsis flex-1 mr-0">Device Information</h2>
                     </div>
                     <div class="tile-content" id="device-content">
-                        <div style="text-align: center; padding: 20px;">
+                        <div style="text-align: center; padding: 20px;" role="status" aria-label="Loading device information">
                             <div class="loading-spinner"></div>
                         </div>
                     </div>
@@ -601,14 +648,14 @@
                 <div class="tile loading" id="posture-tile">
                     <div class="tile-header">
                         <div class="tile-icon" style="background: rgba(168, 85, 247, 0.1); border-color: rgba(168, 85, 247, 0.2);">
-                            <svg fill="none" viewBox="0 0 24 24" stroke="currentColor" style="color: #a855f7;">
+                            <svg fill="none" viewBox="0 0 24 24" stroke="currentColor" style="color: #a855f7;" aria-hidden="true">
                                 <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12l2 2 4-4m5.618-4.016A11.955 11.955 0 0112 2.944a11.955 11.955 0 01-8.618 3.04A12.02 12.02 0 003 9c0 5.591 3.824 10.29 9 11.622 5.176-1.332 9-6.03 9-11.622 0-1.042-.133-2.052-.382-3.016z" />
                             </svg>
                         </div>
                         <h2 class="text-heading-16 font-medium m-0 w-max whitespace-nowrap overflow-hidden text-ellipsis flex-1 mr-0">Device Posture</h2>
                     </div>
                     <div class="tile-content" id="posture-content">
-                        <div style="text-align: center; padding: 20px;">
+                        <div style="text-align: center; padding: 20px;" role="status" aria-label="Loading device posture">
                             <div class="loading-spinner"></div>
                         </div>
                     </div>
@@ -617,18 +664,20 @@
 
             <!-- Debug Section - Full Width -->
             <div class="tile" id="debug-tile" style="margin-top: 20px; grid-column: 1 / -1;">
-                <div class="tile-header" style="cursor: pointer; display: flex; align-items: center;" onclick="toggleDebug()">
-                    <div class="tile-icon">
-                        <svg fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M10 20l4-16m4 4l4 4-4 4M6 16l-4-4 4-4" />
+                <div class="tile-header" style="padding-bottom: 0; border-bottom: none; margin-bottom: 0;">
+                    <button class="debug-toggle-btn" onclick="toggleDebug()" aria-expanded="false" aria-controls="debug-content" id="debug-toggle-btn">
+                        <div class="tile-icon">
+                            <svg fill="none" viewBox="0 0 24 24" stroke="currentColor" aria-hidden="true">
+                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M10 20l4-16m4 4l4 4-4 4M6 16l-4-4 4-4" />
+                            </svg>
+                        </div>
+                        <span class="text-heading-16 font-medium">Debug Information</span>
+                        <svg id="debug-toggle" style="margin-left: auto; width: 20px; height: 20px; transition: transform 0.2s;" fill="none" viewBox="0 0 24 24" stroke="currentColor" aria-hidden="true">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 9l-7 7-7-7" />
                         </svg>
-                    </div>
-                    <h2 class="text-heading-16 font-medium m-0 w-max whitespace-nowrap overflow-hidden text-ellipsis flex-1 mr-0">Debug Information</h2>
-                    <svg id="debug-toggle" style="margin-left: auto; width: 20px; height: 20px; transition: transform 0.2s;" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 9l-7 7-7-7" />
-                    </svg>
+                    </button>
                 </div>
-                <div class="tile-content" id="debug-content" style="display: none;">
+                <div class="tile-content" id="debug-content" role="region" aria-labelledby="debug-toggle-btn" style="display: none;">
                     <pre id="debug-json" style="background: var(--bg-secondary); padding: 15px; border-radius: 8px; overflow: auto; font-size: 13px; line-height: 1.6; max-height: 600px; font-family: 'Monaco', 'Menlo', 'Ubuntu Mono', 'Consolas', monospace; margin: 0; white-space: pre-wrap; word-wrap: break-word;"></pre>
                 </div>
             </div>
@@ -639,7 +688,7 @@
 <footer>
     <div class="container">
         <div class="footer-content">
-            2026 Zero Security Corp. Protected by Cloudflare Access
+            <p>&copy; 2026 Zero Security Corp. Protected by Cloudflare Access</p>
         </div>
     </div>
 </footer>
@@ -686,13 +735,11 @@
     function toggleDebug() {
         const content = document.getElementById('debug-content');
         const toggle = document.getElementById('debug-toggle');
-        if (content.style.display === 'none') {
-            content.style.display = 'block';
-            toggle.style.transform = 'rotate(180deg)';
-        } else {
-            content.style.display = 'none';
-            toggle.style.transform = 'rotate(0deg)';
-        }
+        const toggleBtn = document.getElementById('debug-toggle-btn');
+        const isHidden = content.style.display === 'none';
+        content.style.display = isHidden ? 'block' : 'none';
+        toggle.style.transform = isHidden ? 'rotate(180deg)' : 'rotate(0deg)';
+        toggleBtn.setAttribute('aria-expanded', isHidden ? 'true' : 'false');
     }
 
     function reloadApplication() {

@@ -494,6 +494,55 @@
             font-size: 14px;
         }
 
+        /* Focus states — WCAG 2.1 AA */
+        button:focus-visible,
+        a:focus-visible,
+        .copy-button:focus-visible,
+        .primary-button:focus-visible,
+        .secondary-button:focus-visible,
+        .theme-toggle:focus-visible {
+            outline: 2px solid var(--accent-primary);
+            outline-offset: 2px;
+        }
+
+        a:focus-visible {
+            border-radius: 4px;
+        }
+
+        /* Skip to content */
+        .skip-link {
+            position: absolute;
+            top: -100%;
+            left: 16px;
+            z-index: 9999;
+            padding: 8px 16px;
+            background: var(--accent-primary);
+            color: white;
+            border-radius: 0 0 6px 6px;
+            font-weight: 600;
+            font-size: 14px;
+            text-decoration: none;
+        }
+
+        .skip-link:focus {
+            top: 0;
+        }
+
+        .policy-toggle-btn {
+            background: none;
+            border: none;
+            padding: 0;
+            cursor: pointer;
+            user-select: none;
+            display: flex;
+            align-items: center;
+            gap: 8px;
+            width: 100%;
+            font: inherit;
+            color: inherit;
+            text-align: left;
+        }
+
         @media (max-width: 768px) {
             .block-header h1 {
                 font-size: 28px;
@@ -510,17 +559,18 @@
 </style>
 </head>
 <body>
-<div class="radial-gradient"></div>
+<a href="#main-content" class="skip-link">Skip to main content</a>
+<div class="radial-gradient" aria-hidden="true"></div>
 <header>
-    <nav class="container">
-        <a href="/" class="logo">
+    <nav class="container" aria-label="Primary navigation">
+        <a href="/" class="logo" aria-label="Zero Security Corp home">
             <svg width="120" height="53" viewBox="0 0 120 53" fill="none" xmlns="http://www.w3.org/2000/svg" style="height: 20px; width: auto;">
                 <path d="M82.4133 49.8717C83.1507 47.4123 82.8698 45.1578 81.6408 43.484C80.5171 41.9469 78.621 41.0588 76.3385 40.9563L33.1128 40.4097C32.8319 40.4097 32.5861 40.2731 32.4456 40.0682C32.3052 39.8632 32.2701 39.5899 32.3403 39.3167C32.4808 38.9068 32.9021 38.5993 33.3586 38.5652L76.9706 38.0186C82.1324 37.7795 87.7507 33.7146 89.7171 28.7275L92.2102 22.4081C92.3156 22.1348 92.3507 21.8616 92.2804 21.5883C89.4713 9.22285 78.1294 0 64.5752 0C52.0745 0 41.47 7.8565 37.6777 18.7531C35.2197 16.9769 32.0945 16.0204 28.7235 16.3279C22.719 16.9086 17.9083 21.5883 17.3114 27.4294C17.1709 28.9324 17.2762 30.4012 17.6274 31.7676C7.83049 32.0409 0 39.8291 0 49.4277C0 50.2816 0.0702286 51.1356 0.175572 51.9896C0.2458 52.3995 0.596941 52.7069 1.01831 52.7069H80.7981C81.2545 52.7069 81.6759 52.3995 81.8164 51.9554L82.4133 49.8717Z" fill="#F38020"/>
                 <path d="M96.1781 22.8521C95.7918 22.8521 95.3704 22.852 94.9842 22.8862C94.7033 22.8862 94.4575 23.0912 94.3521 23.3644L92.6667 29.0689C91.9293 31.5284 92.2102 33.7828 93.4392 35.4566C94.5628 36.9938 96.459 37.8819 98.7414 37.9844L107.941 38.5309C108.222 38.5309 108.468 38.6675 108.609 38.8725C108.749 39.0774 108.784 39.3849 108.714 39.624C108.573 40.0339 108.152 40.3413 107.696 40.3755L98.1094 40.922C92.9125 41.1611 87.3293 45.226 85.3629 50.2132L84.6606 51.9553C84.5201 52.2969 84.7659 52.6384 85.1522 52.6384H118.089C118.476 52.6384 118.827 52.3993 118.932 52.0236C119.494 50.0424 119.81 47.9587 119.81 45.8067C119.81 33.168 109.205 22.8521 96.1781 22.8521Z" fill="#FAAE40"/>
             </svg>
-            Zero Security Corp
+            <span>Zero Security Corp</span>
         </a>
-        <button class="theme-toggle" id="theme-toggle" aria-label="Toggle theme">
+        <button class="theme-toggle" id="theme-toggle" aria-label="Toggle color theme">
             <svg id="theme-icon-sun" style="display: none;" fill="none" viewBox="0 0 24 24" stroke="currentColor">
                 <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 3v1m0 16v1m9-9h-1M4 12H3m15.364 6.364l-.707-.707M6.343 6.343l-.707-.707m12.728 0l-.707.707M6.343 17.657l-.707.707M16 12a4 4 0 11-8 0 4 4 0 018 0z" />
             </svg>
@@ -531,7 +581,7 @@
     </nav>
 </header>
 
-<main>
+<main id="main-content">
     <div class="container">
         <div class="block-container">
             <div class="block-header">
@@ -541,7 +591,7 @@
                     </svg>
                 </div>
                 <h1 class="text-heading-24 mt-8 mb-4">Access Blocked</h1>
-                <p class="text-sm text-gray-900 m-0">This content has been blocked by your organization's security policy. If you believe this is an error, please <a href="mailto:it@0security.net" style="color: #90c5ff; text-decoration: underline;">contact</a> your IT support team with the details below.</p>
+                <p class="text-sm text-gray-900 m-0">This content has been blocked by your organization's security policy. If you believe this is an error, please <a href="mailto:it@0security.net" style="color: #90c5ff; text-decoration: underline;" aria-label="Email IT support">contact</a> your IT support team with the details below.</p>
             </div>
 
             <div class="info-box" id="block-reason">
@@ -549,16 +599,18 @@
             </div>
 
             <div class="policy-details">
-                <h2 class="text-heading-16 font-medium m-0 w-max whitespace-nowrap overflow-hidden text-ellipsis flex-1 mr-0" onclick="togglePolicyDetails()" style="cursor: pointer; user-select: none;">
-                    <svg fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" />
-                    </svg>
-                    Policy Context Details
-                    <svg id="collapse-icon" style="width: 16px; height: 16px; display: inline-block; margin-left: 8px; transition: transform 0.2s; transform: rotate(-90deg);" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 9l-7 7-7-7" />
-                    </svg>
+                <h2 class="text-heading-16 font-medium m-0">
+                    <button class="policy-toggle-btn" onclick="togglePolicyDetails()" aria-expanded="false" aria-controls="policy-grid" id="policy-toggle">
+                        <svg fill="none" viewBox="0 0 24 24" stroke="currentColor" width="20" height="20" aria-hidden="true">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" />
+                        </svg>
+                        Policy Context Details
+                        <svg id="collapse-icon" style="width: 16px; height: 16px; display: inline-block; margin-left: 8px; transition: transform 0.2s; transform: rotate(-90deg);" fill="none" viewBox="0 0 24 24" stroke="currentColor" aria-hidden="true">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 9l-7 7-7-7" />
+                        </svg>
+                    </button>
                 </h2>
-                <div class="policy-grid" id="policy-grid" style="display: none;">
+                <div class="policy-grid" id="policy-grid" role="region" aria-labelledby="policy-toggle" style="display: none;">
                     <div class="policy-item full-width">
                         <div class="policy-label">Blocked URL</div>
                         <div class="policy-value" id="cf_site_uri">Not Available</div>
@@ -582,7 +634,7 @@
             <div class="technical-details">
                 <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 12px;">
                     <div class="technical-label" style="margin-bottom: 0;">Technical Details (for IT support reference)</div>
-                    <button onclick="copyTechnicalDetails()" class="copy-button" id="copy-btn">
+                    <button onclick="copyTechnicalDetails()" class="copy-button" id="copy-btn" aria-label="Copy technical details to clipboard">
                         <svg style="width: 14px; height: 14px; margin-right: 4px;" fill="none" viewBox="0 0 24 24" stroke="currentColor">
                             <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8 16H6a2 2 0 01-2-2V6a2 2 0 012-2h8a2 2 0 012 2v2m-6 12h8a2 2 0 002-2v-8a2 2 0 00-2-2h-8a2 2 0 00-2 2v8a2 2 0 002 2z" />
                         </svg>
@@ -603,7 +655,7 @@
 <footer>
     <div class="container">
         <div class="footer-content">
-            2026 Zero Security Corp. Protected by Cloudflare Secure Web Gateway
+            <p>&copy; 2026 Zero Security Corp. Protected by Cloudflare Secure Web Gateway</p>
         </div>
     </div>
 </footer>
@@ -691,13 +743,11 @@
     function togglePolicyDetails() {
         const grid = document.getElementById('policy-grid');
         const icon = document.getElementById('collapse-icon');
-        if (grid.style.display === 'none') {
-            grid.style.display = 'grid';
-            icon.style.transform = 'rotate(0deg)';
-        } else {
-            grid.style.display = 'none';
-            icon.style.transform = 'rotate(-90deg)';
-        }
+        const toggle = document.getElementById('policy-toggle');
+        const isHidden = grid.style.display === 'none';
+        grid.style.display = isHidden ? 'grid' : 'none';
+        icon.style.transform = isHidden ? 'rotate(0deg)' : 'rotate(-90deg)';
+        toggle.setAttribute('aria-expanded', isHidden ? 'true' : 'false');
     }
 
     // Set initial collapsed state

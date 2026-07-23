@@ -10,7 +10,7 @@
 <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.0/dist/chart.umd.min.js"></script>
 <script src="https://cdnjs.cloudflare.com/ajax/libs/html2canvas/1.4.1/html2canvas.min.js"></script>
 <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
-<link href="https://fonts.googleapis.com/css2?family=Roboto+Mono:wght@400;500;600;700&display=swap" rel="stylesheet">
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600&family=JetBrains+Mono:wght@400;500&display=swap" rel="stylesheet">
 <style>
     * {
         margin: 0;
@@ -19,42 +19,56 @@
     }
 
     :root {
-        --bg-primary: #ffffff;
-        --bg-secondary: #f9fafb;
-        --bg-tertiary: #f3f4f6;
-        --bg-hover: #e5e7eb;
-        --text-primary: #111827;
-        --text-secondary: #4b5563;
-        --text-tertiary: #6b7280;
-        --border-primary: #e5e7eb;
-        --border-secondary: #f3f4f6;
-        --accent-primary: #2563eb;
-        --accent-hover: #1d4ed8;
-        --accent-info: #3b82f6;
-        --accent-error: #dc2626;
-        --accent-warning: #f59e0b;
-        --accent-success: #10b981;
-        --gradient-color: rgba(37, 99, 235, 0.08);
-        --icon-bg: rgba(37, 99, 235, 0.1);
-        --icon-border: rgba(37, 99, 235, 0.2);
+        /* cloudflare.com design tokens */
+        --bg-primary: #ffffff;          /* canvas — white surface */
+        --bg-secondary: #fffbf5;        /* cream — the signature off-white */
+        --bg-tertiary: #f0f0f0;         /* hairline — muted fill */
+        --bg-hover: #f5f5f5;            /* light hover */
+        --text-primary: #262626;        /* ink — primary text */
+        --text-secondary: #727272;      /* muted — secondary text */
+        --text-tertiary: #6a6967;       /* nav-muted — tertiary text */
+        --border-primary: #f0f0f0;      /* hairline — the one border tone */
+        --border-secondary: #f0f0f0;    /* hairline */
+        --accent-primary: #ff5e1f;      /* kumo brand */
+        --accent-hover: #ff7038;        /* kumo brand hover */
+        --accent-info: #0a95ff;         /* compute blue */
+        --accent-error: #ed1641;        /* emergency red */
+        --accent-warning: #ff9650;      /* kumo brand soft */
+        --accent-success: #00bd7d;      /* AI green */
+        --accent-sase: #0d9488;         /* SASE teal */
+        --gradient-color: rgba(255, 94, 31, 0.08);
+        --icon-bg: rgba(255, 94, 31, 0.1);
+        --icon-border: rgba(255, 94, 31, 0.2);
+
+        /* cloudflare.com typography — Inter ≈ FT Kunst Grotesk, JetBrains Mono ≈ Apercu Mono Pro */
+        --font-sans: 'Inter', sans-serif;
+        --font-mono: 'JetBrains Mono', monospace;
     }
 
     body {
-        font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, 'Helvetica Neue', Arial, sans-serif;
+        font-family: var(--font-sans);
         background: var(--bg-secondary);
         color: var(--text-primary);
-        line-height: 1.5;
+        font-size: 16px;
+        line-height: 1.2;
+        letter-spacing: -0.04px;
+        -webkit-font-smoothing: antialiased;
+        -moz-osx-font-smoothing: grayscale;
         transition: background-color 0.3s ease, color 0.3s ease;
         min-height: 100vh;
     }
 
     header {
-        padding: 16px 0;
+        padding: 12px 0;
         border-bottom: 1px solid var(--border-primary);
         background: var(--bg-primary);
+        height: 64px;
+        display: flex;
+        align-items: center;
     }
 
     nav {
+        width: 100%;
         max-width: 1200px;
         margin: 0 auto;
         padding: 0 16px;
@@ -65,7 +79,7 @@
 
     .logo {
         font-size: 16px;
-        font-weight: 600;
+        font-weight: 500;
         color: var(--text-primary);
         text-decoration: none;
         display: flex;
@@ -91,15 +105,20 @@
     }
 
     .page-header h1 {
+        font-family: var(--font-sans);
         color: var(--text-primary);
-        font-size: 1.75rem;
+        font-size: 19.2px;
         margin-bottom: 6px;
-        font-weight: 700;
+        font-weight: 400;
+        letter-spacing: -0.48px;
+        line-height: 23.04px;
     }
 
     .page-header p {
         color: var(--text-secondary);
-        font-size: 0.95rem;
+        font-size: 14px;
+        line-height: 16.1px;
+        letter-spacing: -0.14px;
     }
 
     .controls {
@@ -117,9 +136,11 @@
         color: var(--text-primary);
         border-radius: 6px;
         cursor: pointer;
-        font-family: 'Roboto Mono', monospace;
-        font-size: 0.85rem;
+        font-family: var(--font-sans);
+        font-size: 14px;
         font-weight: 500;
+        letter-spacing: -0.14px;
+        line-height: 24px;
         transition: all 0.2s ease;
     }
 
@@ -130,7 +151,7 @@
 
     .btn.active {
         background: var(--accent-primary);
-        color: white;
+        color: #fffbf5;
         border-color: var(--accent-primary);
     }
 
@@ -186,27 +207,31 @@
     }
 
     .stat-card-title {
-        font-family: 'Roboto Mono', monospace;
-        color: rgb(95, 99, 104);
-        font-size: 0.75rem;
-        font-weight: 500;
+        font-family: var(--font-mono);
+        color: var(--text-secondary);
+        font-size: 12px;
+        font-weight: 400;
         text-transform: uppercase;
-        letter-spacing: 0.1em;
+        letter-spacing: 0;
+        line-height: 18px;
     }
 
     .stat-card-value {
-        font-family: 'Roboto Mono', monospace;
+        font-family: var(--font-sans);
         color: var(--text-primary);
         font-size: 2rem;
-        font-weight: 700;
+        font-weight: 500;
         line-height: 1;
+        letter-spacing: -1.2px;
     }
 
     .stat-card-subtitle {
-        font-family: 'Roboto Mono', monospace;
-        color: rgb(95, 99, 104);
-        font-size: 0.85rem;
+        font-family: var(--font-sans);
+        color: var(--text-secondary);
+        font-size: 14px;
         font-weight: 400;
+        line-height: 16.1px;
+        letter-spacing: -0.14px;
     }
 
     .card {
@@ -219,11 +244,13 @@
     }
 
     .card h2 {
-        font-family: 'Roboto Mono', monospace;
-        color: rgb(95, 99, 104);
-        font-size: 0.9rem;
+        font-family: var(--font-sans);
+        color: var(--text-primary);
+        font-size: 18px;
         margin-bottom: 12px;
-        font-weight: 600;
+        font-weight: 500;
+        letter-spacing: -0.45px;
+        line-height: 21.6px;
     }
 
     .chart-container {
@@ -238,12 +265,14 @@
         z-index: 60;
         background: var(--bg-primary);
         border: 1px solid var(--border-primary);
-        border-radius: 8px;
+        border-radius: 4px;
         padding: 12px 16px;
-        box-shadow: 0 4px 16px rgba(0, 0, 0, 0.15);
-        font-family: 'Roboto Mono', monospace;
-        font-size: 0.8rem;
-        color: rgb(95, 99, 104);
+        box-shadow: 0 4px 16px rgba(0, 0, 0, 0.04);
+        font-family: var(--font-sans);
+        font-size: 14px;
+        line-height: 16.1px;
+        letter-spacing: -0.14px;
+        color: var(--text-secondary);
         max-width: 300px;
         pointer-events: none;
     }
@@ -252,12 +281,12 @@
         width: 22px;
         height: 22px;
         border-radius: 50%;
-        border: 1.5px solid rgb(95, 99, 104);
+        border: 1.5px solid var(--border-primary);
         background: transparent;
-        color: rgb(95, 99, 104);
-        font-family: 'Roboto Mono', monospace;
+        color: var(--text-secondary);
+        font-family: var(--font-mono);
         font-size: 12px;
-        font-weight: 600;
+        font-weight: 400;
         font-style: italic;
         cursor: pointer;
         display: flex;
@@ -267,8 +296,8 @@
     }
 
     .info-btn:hover {
-        background: rgb(95, 99, 104);
-        color: white;
+        background: var(--border-primary);
+        color: var(--text-primary);
     }
 
     .donut-chart-wrapper {
@@ -294,6 +323,7 @@
         text-align: center;
         pointer-events: none;
         z-index: 1;
+        max-width: 110px;
     }
 
     .donut-chart-container canvas {
@@ -302,19 +332,25 @@
     }
 
     .donut-chart-center .total-count {
-        font-family: 'Roboto Mono', monospace;
+        font-family: var(--font-sans);
         font-size: 1.5rem;
-        font-weight: 700;
+        font-weight: 500;
+        letter-spacing: -1.2px;
         color: var(--text-primary);
         line-height: 1;
+        white-space: nowrap;
+        overflow: hidden;
+        text-overflow: ellipsis;
+        max-width: 110px;
     }
 
     .donut-chart-center .total-label {
-        font-family: 'Roboto Mono', monospace;
-        font-size: 0.7rem;
-        color: rgb(95, 99, 104);
+        font-family: var(--font-mono);
+        font-size: 12px;
+        line-height: 18px;
+        color: var(--text-secondary);
         text-transform: uppercase;
-        letter-spacing: 0.05em;
+        letter-spacing: 0;
         margin-top: 4px;
     }
 
@@ -322,8 +358,8 @@
         display: flex;
         flex-direction: column;
         gap: 4px;
-        width: 240px;
-        max-width: 240px;
+        width: 280px;
+        max-width: 280px;
         max-height: 200px;
         overflow-y: auto;
         overflow-x: hidden;
@@ -352,28 +388,28 @@
     }
 
     .chart-legend-label {
-        font-family: 'Roboto Mono', monospace;
+        font-family: var(--font-mono);
         font-size: 0.6rem;
-        color: rgb(95, 99, 104);
-        width: 130px;
-        min-width: 130px;
-        max-width: 130px;
+        color: var(--text-secondary);
+        flex: 1;
+        min-width: 0;
         white-space: nowrap;
         overflow: hidden;
         text-overflow: ellipsis;
     }
 
     .chart-legend-count {
-        font-family: 'Roboto Mono', monospace;
+        font-family: var(--font-mono);
         font-size: 0.55rem;
-        font-weight: 600;
+        font-weight: 500;
         color: var(--text-primary);
         background: var(--bg-tertiary);
-        padding: 2px 5px;
+        padding: 2px 6px;
         border-radius: 8px;
         white-space: nowrap;
         flex-shrink: 0;
         margin-left: auto;
+        max-width: none;
     }
 
     .loading {
@@ -415,9 +451,12 @@
     }
 
     .modal-header h2 {
+        font-family: var(--font-sans);
         color: var(--text-primary);
-        font-size: 1.5rem;
-        font-weight: 600;
+        font-size: 19.2px;
+        font-weight: 400;
+        letter-spacing: -0.48px;
+        line-height: 23.04px;
     }
 
     .close {
@@ -449,11 +488,13 @@
     .table th {
         padding: 12px;
         text-align: left;
-        font-weight: 600;
+        font-family: var(--font-mono);
+        font-weight: 400;
         color: var(--text-secondary);
-        font-size: 0.9rem;
+        font-size: 12px;
+        line-height: 18px;
         text-transform: uppercase;
-        letter-spacing: 0.05em;
+        letter-spacing: 0;
         border-bottom: 2px solid var(--border-primary);
     }
 
@@ -465,6 +506,329 @@
 
     .table tbody tr:hover {
         background: var(--bg-hover);
+    }
+
+    /* Focus states — WCAG 2.1 AA */
+    .btn:focus-visible,
+    .info-btn:focus-visible,
+    .close:focus-visible,
+    .copy-button:focus-visible,
+    .primary-button:focus-visible,
+    .secondary-button:focus-visible,
+    button:focus-visible {
+        outline: 2px solid var(--accent-primary);
+        outline-offset: 2px;
+    }
+
+    a:focus-visible {
+        outline: 2px solid var(--accent-primary);
+        outline-offset: 2px;
+        border-radius: 4px;
+    }
+
+    /* Skip to content — a11y */
+    .skip-link {
+        position: absolute;
+        top: -100%;
+        left: 16px;
+        z-index: 9999;
+        padding: 8px 16px;
+        background: var(--accent-primary);
+        color: white;
+        border-radius: 0 0 6px 6px;
+        font-weight: 600;
+        font-size: 0.85rem;
+        text-decoration: none;
+    }
+
+    .skip-link:focus {
+        top: 0;
+    }
+
+    /* Error banner */
+    .error-banner {
+        background: rgba(237, 22, 65, 0.06);
+        border: 1px solid rgba(237, 22, 65, 0.2);
+        color: var(--accent-error);
+        border-radius: 8px;
+        padding: 16px 20px;
+        margin-bottom: 16px;
+        font-family: var(--font-sans);
+        font-size: 14px;
+        line-height: 16.1px;
+        letter-spacing: -0.14px;
+        display: flex;
+        align-items: center;
+        gap: 10px;
+    }
+
+    .error-banner button {
+        background: var(--accent-error);
+        color: white;
+        border: none;
+        padding: 6px 14px;
+        border-radius: 6px;
+        font-size: 0.8rem;
+        font-weight: 600;
+        cursor: pointer;
+        margin-left: auto;
+        flex-shrink: 0;
+    }
+
+    .error-banner button:hover {
+        opacity: 0.9;
+    }
+
+    /* Utility classes for inline-style replacement */
+    .nav-brand {
+        width: 220px;
+        flex-shrink: 0;
+    }
+
+    .nav-title-group {
+        text-align: center;
+        flex: 1;
+    }
+
+    .nav-title {
+        font-family: var(--font-sans);
+        font-size: 18px;
+        font-weight: 500;
+        letter-spacing: -0.45px;
+        line-height: 21.6px;
+        color: var(--text-primary);
+        margin: 0;
+    }
+
+    .nav-subtitle {
+        font-family: var(--font-mono);
+        font-size: 12px;
+        line-height: 18px;
+        letter-spacing: 0;
+        font-weight: 400;
+        color: var(--text-tertiary);
+        margin: 2px 0 0 0;
+    }
+
+    .nav-spacer {
+        width: 220px;
+    }
+
+    .logo-text {
+        font-family: var(--font-sans);
+        font-weight: 500;
+        font-size: 16px;
+        line-height: 24px;
+        letter-spacing: 0;
+        color: var(--text-primary);
+    }
+
+    .dashboard-layout {
+        display: flex;
+        gap: 16px;
+    }
+
+    .sidebar {
+        width: 220px;
+        flex-shrink: 0;
+        margin-top: 44px;
+    }
+
+    .sidebar-inner {
+        display: flex;
+        flex-direction: column;
+        gap: 12px;
+    }
+
+    .main-content {
+        flex: 1;
+        min-width: 0;
+    }
+
+    .controls-wrapper {
+        display: flex;
+        justify-content: center;
+        margin-bottom: 12px;
+    }
+
+    .chart-grid-2 {
+        display: grid;
+        grid-template-columns: repeat(2, 1fr);
+        gap: 16px;
+        margin-bottom: 16px;
+    }
+
+    .chart-grid-3 {
+        display: grid;
+        grid-template-columns: repeat(3, 1fr);
+        gap: 16px;
+    }
+
+    .card-header {
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+        margin-bottom: 10px;
+    }
+
+    .card-header h2 {
+        margin: 0;
+    }
+
+    .section-group {
+        padding: 16px;
+        border-radius: 12px;
+        margin-bottom: 16px;
+    }
+
+    .section-group-purple,
+    .section-group-blue {
+        background: var(--bg-primary);
+        border: 1px solid var(--border-primary);
+    }
+
+    .section-group-header {
+        display: flex;
+        align-items: center;
+        gap: 10px;
+        margin-bottom: 16px;
+    }
+
+    .section-group-icon {
+        width: 36px;
+        height: 36px;
+        border-radius: 8px;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+    }
+
+    .section-group-icon-purple,
+    .section-group-icon-blue {
+        background: var(--accent-primary);
+    }
+
+    .section-group-title {
+        margin: 0;
+        font-family: var(--font-sans);
+        color: var(--text-primary);
+        font-size: 18px;
+        font-weight: 500;
+        letter-spacing: -0.45px;
+        line-height: 21.6px;
+    }
+
+    .live-status-bar {
+        display: none;
+        text-align: center;
+        margin-bottom: 12px;
+        font-family: var(--font-mono);
+        font-size: 12px;
+        line-height: 18px;
+        color: var(--text-secondary);
+    }
+
+    .live-logs-header {
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+        margin-bottom: 10px;
+    }
+
+    .live-logs-title {
+        display: flex;
+        align-items: center;
+        gap: 8px;
+    }
+
+    .live-logs-actions {
+        display: flex;
+        align-items: center;
+        gap: 12px;
+    }
+
+    .log-meta {
+        font-family: var(--font-mono);
+        font-size: 12px;
+        line-height: 18px;
+        color: var(--text-secondary);
+    }
+
+    .log-table-wrap {
+        max-height: 300px;
+        overflow-y: auto;
+        font-family: var(--font-mono);
+        font-size: 12px;
+        line-height: 18px;
+    }
+
+    .log-table {
+        width: 100%;
+        border-collapse: collapse;
+    }
+
+    .log-table thead {
+        position: sticky;
+        top: 0;
+        background: var(--bg-primary);
+        z-index: 1;
+    }
+
+    .log-table th {
+        padding: 8px 12px;
+        color: var(--text-secondary);
+        font-weight: 500;
+        border-bottom: 1px solid var(--border-primary);
+    }
+
+    .log-table th:nth-child(2) {
+        text-align: right;
+    }
+
+    .no-logs-msg {
+        text-align: center;
+        padding: 20px;
+        color: var(--text-secondary);
+    }
+
+    .visually-hidden {
+        position: absolute;
+        width: 1px;
+        height: 1px;
+        padding: 0;
+        margin: -1px;
+        overflow: hidden;
+        clip: rect(0, 0, 0, 0);
+        white-space: nowrap;
+        border: 0;
+    }
+
+    .pdf-btn {
+        background: var(--accent-primary);
+        color: white;
+    }
+
+    .controls-divider {
+        border-left: 1px solid var(--border-primary);
+        height: 24px;
+        margin: 0 4px;
+    }
+
+    .stat-value-sm {
+        font-size: 1.5rem;
+    }
+
+    .stat-value-xs {
+        font-size: 1rem;
+        word-break: break-all;
+    }
+
+    .text-success {
+        color: var(--accent-success);
+    }
+
+    .text-error {
+        color: var(--accent-error);
     }
 
     @media (max-width: 768px) {
@@ -481,256 +845,283 @@
             margin: 10% auto;
             padding: 20px;
         }
+
+        .dashboard-layout {
+            flex-direction: column;
+        }
+
+        .sidebar {
+            width: 100%;
+            margin-top: 0;
+        }
+
+        .chart-grid-2,
+        .chart-grid-3 {
+            grid-template-columns: 1fr;
+        }
+
+        .nav-brand,
+        .nav-spacer {
+            display: none;
+        }
     }
 </style>
 </head>
 <body>
+<a href="#main-content" class="skip-link">Skip to main content</a>
 <header>
-    <nav>
-        <a href="/" class="logo" style="width: 220px; flex-shrink: 0;">
-            <svg width="40" height="18" viewBox="0 0 120 53" fill="none" xmlns="http://www.w3.org/2000/svg">
+    <nav aria-label="Primary navigation">
+        <a href="/" class="logo nav-brand" aria-label="Zero Security Corp home">
+            <svg width="40" height="18" viewBox="0 0 120 53" fill="none" xmlns="http://www.w3.org/2000/svg" aria-hidden="true">
                 <path d="M82.4133 49.8717C83.1507 47.4123 82.8698 45.1578 81.6408 43.484C80.5171 41.9469 78.621 41.0588 76.3385 40.9563L33.1128 40.4097C32.8319 40.4097 32.5861 40.2731 32.4456 40.0682C32.3052 39.8632 32.2701 39.5899 32.3403 39.3167C32.4808 38.9068 32.9021 38.5993 33.3586 38.5652L76.9706 38.0186C82.1324 37.7795 87.7507 33.7146 89.7171 28.7275L92.2102 22.4081C92.3156 22.1348 92.3507 21.8616 92.2804 21.5883C89.4713 9.22285 78.1294 0 64.5752 0C52.0745 0 41.47 7.8565 37.6777 18.7531C35.2197 16.9769 32.0945 16.0204 28.7235 16.3279C22.719 16.9086 17.9083 21.5883 17.3114 27.4294C17.1709 28.9324 17.2762 30.4012 17.6274 31.7676C7.83049 32.0409 0 39.8291 0 49.4277C0 50.2816 0.0702286 51.1356 0.175572 51.9896C0.2458 52.3995 0.596941 52.7069 1.01831 52.7069H80.7981C81.2545 52.7069 81.6759 52.3995 81.8164 51.9554L82.4133 49.8717Z" fill="#F38020"/>
                 <path d="M96.1781 22.8521C95.7918 22.8521 95.3704 22.852 94.9842 22.8862C94.7033 22.8862 94.4575 23.0912 94.3521 23.3644L92.6667 29.0689C91.9293 31.5284 92.2102 33.7828 93.4392 35.4566C94.5628 36.9938 96.459 37.8819 98.7414 37.9844L107.941 38.5309C108.222 38.5309 108.468 38.6675 108.609 38.8725C108.749 39.0774 108.784 39.3849 108.714 39.624C108.573 40.0339 108.152 40.3413 107.696 40.3755L98.1094 40.922C92.9125 41.1611 87.3293 45.226 85.3629 50.2132L84.6606 51.9553C84.5201 52.2969 84.7659 52.6384 85.1522 52.6384H118.089C118.476 52.6384 118.827 52.3993 118.932 52.0236C119.494 50.0424 119.81 47.9587 119.81 45.8067C119.81 33.168 109.205 22.8521 96.1781 22.8521Z" fill="#FAAE40"/>
             </svg>
-            <span style="font-family: 'Roboto Mono', monospace; font-weight: 600; font-size: 0.85rem; color: var(--text-primary);">Zero Security Corp</span>
+            <span class="logo-text">Zero Security Corp</span>
         </a>
-        <div style="text-align: center; flex: 1;">
-            <h1 style="font-family: 'Roboto Mono', monospace; font-size: 1.25rem; font-weight: 700; color: var(--text-primary); margin: 0;">DNS Analytics Dashboard</h1>
-            <p style="font-family: 'Roboto Mono', monospace; font-size: 0.75rem; color: var(--text-tertiary); margin: 2px 0 0 0;">Real-time insights into DNS traffic patterns and security trends</p>
+        <div class="nav-title-group">
+            <h1 class="nav-title">DNS Analytics Dashboard</h1>
+            <p class="nav-subtitle">Real-time insights into DNS traffic patterns and security trends</p>
         </div>
-        <div style="width: 220px;"></div>
+        <div class="nav-spacer" aria-hidden="true"></div>
     </nav>
 </header>
 
-    <div class="container">
-        <div style="display: flex; gap: 16px;">
+    <main id="main-content" class="container">
+        <!-- Error banner for failed data loads -->
+        <div id="errorBanner" class="error-banner" role="alert" style="display: none;">
+            <span id="errorMessage">Failed to load dashboard data.</span>
+            <button onclick="loadDashboardData(currentTimeRange)" aria-label="Retry loading dashboard data">Retry</button>
+        </div>
+
+        <div class="dashboard-layout">
             <!-- Left Sidebar - Quick Stats -->
-            <div style="width: 220px; flex-shrink: 0; margin-top: 44px;">
-                <div style="display: flex; flex-direction: column; gap: 12px;">
+            <aside class="sidebar" aria-label="Quick statistics">
+                <div class="sidebar-inner">
                     <div class="stat-card">
                         <div class="stat-card-title">Total Queries</div>
-                        <div class="stat-card-value" style="font-size: 1.5rem;" id="totalQueries">-</div>
+                        <div class="stat-card-value stat-value-sm" id="totalQueries">-</div>
                     </div>
                     <div class="stat-card">
                         <div class="stat-card-title">Allowed Queries</div>
-                        <div class="stat-card-value" id="allowedQueries" style="color: var(--accent-success); font-size: 1.5rem;">-</div>
+                        <div class="stat-card-value stat-value-sm text-success" id="allowedQueries">-</div>
                         <div class="stat-card-subtitle" id="allowedPercent">-</div>
                     </div>
                     <div class="stat-card">
                         <div class="stat-card-title">Blocked Queries</div>
-                        <div class="stat-card-value" id="blockedQueries" style="color: var(--accent-error); font-size: 1.5rem;">-</div>
+                        <div class="stat-card-value stat-value-sm text-error" id="blockedQueries">-</div>
                         <div class="stat-card-subtitle" id="blockedPercent">-</div>
                     </div>
                     <div class="stat-card">
                         <div class="stat-card-title">Top Blocked Source Geo</div>
-                        <div class="stat-card-value" style="font-size: 1rem; color: var(--accent-error); word-break: break-all;" id="topCountryBlocked">-</div>
+                        <div class="stat-card-value stat-value-xs text-error" id="topCountryBlocked">-</div>
                         <div class="stat-card-subtitle" id="topCountryBlockedCount">-</div>
                     </div>
                     <div class="stat-card">
                         <div class="stat-card-title">Top Query Source Geo</div>
-                        <div class="stat-card-value" style="font-size: 1rem; word-break: break-all;" id="topCountryQueries">-</div>
+                        <div class="stat-card-value stat-value-xs" id="topCountryQueries">-</div>
                         <div class="stat-card-subtitle" id="topCountryQueriesCount">-</div>
                     </div>
                 </div>
-            </div>
+            </aside>
 
             <!-- Main Content -->
-            <div style="flex: 1; min-width: 0;">
-                <div style="display: flex; justify-content: center; margin-bottom: 12px;">
-                    <div class="controls" style="gap: 8px;">
-                        <button class="btn live-btn" onclick="toggleLiveMode()" id="liveBtn">
-                            <span class="live-indicator" id="liveIndicator"></span>
+            <div class="main-content">
+                <div class="controls-wrapper">
+                    <div class="controls" role="toolbar" aria-label="Time range controls">
+                        <button class="btn live-btn" onclick="toggleLiveMode()" id="liveBtn" aria-pressed="false" aria-label="Toggle live mode">
+                            <span class="live-indicator" id="liveIndicator" aria-hidden="true"></span>
                             <span id="liveBtnText">Live</span>
                         </button>
-                        <button class="btn" onclick="changeTimeRange('1h')">Last 1 Hour</button>
-                        <button class="btn" onclick="changeTimeRange('24h')">Last 24 Hours</button>
-                        <button class="btn active" onclick="changeTimeRange('7d')">Last 7 Days</button>
-                        <button class="btn" onclick="changeTimeRange('30d')">Last 30 Days</button>
-                        <span style="border-left: 1px solid var(--border-primary); height: 24px; margin: 0 4px;"></span>
-                        <button class="btn" onclick="generatePDFReport()" id="pdfBtn" style="background: var(--accent-primary); color: white;">
+                        <button class="btn" onclick="changeTimeRange('1h')" aria-label="Show last 1 hour">Last 1 Hour</button>
+                        <button class="btn" onclick="changeTimeRange('24h')" aria-label="Show last 24 hours">Last 24 Hours</button>
+                        <button class="btn active" onclick="changeTimeRange('7d')" aria-pressed="true" aria-label="Show last 7 days">Last 7 Days</button>
+                        <button class="btn" onclick="changeTimeRange('30d')" aria-label="Show last 30 days">Last 30 Days</button>
+                        <span class="controls-divider" aria-hidden="true"></span>
+                        <button class="btn pdf-btn" onclick="generatePDFReport()" id="pdfBtn" aria-label="Export dashboard as PDF">
                             📄 Export PDF
                         </button>
                     </div>
                 </div>
-                <div id="liveStatus" style="display: none; text-align: center; margin-bottom: 12px; font-family: 'Roboto Mono', monospace; font-size: 0.8rem; color: var(--text-secondary);">
+                <div id="liveStatus" class="live-status-bar" aria-live="polite">
                     <span id="liveStatusText">Refreshing in <span id="countdown">10</span>s</span>
-                    <span style="margin-left: 12px;">|</span>
-                    <span id="dataTimeRange" style="margin-left: 12px;">Data: --</span>
-                </div>
-                <div class="card" style="margin-bottom: 16px;">
-                    <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 10px;">
-                        <h2 style="margin: 0;">📈 DNS Query Timeline</h2>
-                        <span id="timelinePeriod" style="font-family: 'Roboto Mono', monospace; font-size: 0.75rem; color: var(--text-secondary);">Last 7 Days</span>
-                    </div>
-                    <div class="chart-container" style="height: 180px;">
-                        <canvas id="timelineChart"></canvas>
-                    </div>
+                    <span aria-hidden="true"> | </span>
+                    <span id="dataTimeRange">Data: --</span>
                 </div>
 
+                <!-- Timeline -->
+                <section class="card" aria-label="DNS Query Timeline">
+                    <div class="card-header">
+                        <h2>📈 DNS Query Timeline</h2>
+                        <span id="timelinePeriod" class="log-meta">Last 7 Days</span>
+                    </div>
+                    <div class="chart-container" style="height: 180px;">
+                        <canvas id="timelineChart" aria-label="DNS query volume chart"></canvas>
+                    </div>
+                </section>
+
                 <!-- Live DNS Logs Table - Only visible in Live mode -->
-                <div id="liveLogsContainer" class="card" style="margin-bottom: 16px; display: none;">
-                    <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 10px;">
-                        <div style="display: flex; align-items: center; gap: 8px;">
-                            <h2 style="margin: 0;">⚡ Live DNS Logs</h2>
-                            <button onclick="showQueryInfo('liveLogs')" class="info-btn" title="View Information">i</button>
+                <section id="liveLogsContainer" class="card" style="display: none;" aria-label="Live DNS Logs">
+                    <div class="live-logs-header">
+                        <div class="live-logs-title">
+                            <h2>⚡ Live DNS Logs</h2>
+                            <button onclick="showQueryInfo('liveLogs')" class="info-btn" aria-label="View live logs information">i</button>
                         </div>
-                        <div style="display: flex; align-items: center; gap: 12px;">
-                            <span id="logCount" style="font-family: 'Roboto Mono', monospace; font-size: 0.75rem; color: var(--text-secondary);">0 logs</span>
-                            <button onclick="clearLogs()" class="btn" style="padding: 4px 12px; font-size: 0.75rem;">Clear</button>
+                        <div class="live-logs-actions">
+                            <span id="logCount" class="log-meta" aria-live="polite">0 logs</span>
+                            <button onclick="clearLogs()" class="btn" style="padding: 4px 12px; font-size: 0.75rem;" aria-label="Clear log entries">Clear</button>
                         </div>
                     </div>
-                    <div id="liveLogsTable" style="max-height: 300px; overflow-y: auto; font-family: 'Roboto Mono', monospace; font-size: 0.75rem;">
-                        <table style="width: 100%; border-collapse: collapse;">
-                            <thead style="position: sticky; top: 0; background: var(--bg-primary); z-index: 1;">
-                                <tr style="border-bottom: 1px solid var(--border-primary);">
-                                    <th style="text-align: left; padding: 8px 12px; color: var(--text-secondary); font-weight: 500;">Time</th>
-                                    <th style="text-align: right; padding: 8px 12px; color: var(--text-secondary); font-weight: 500;">Query Count</th>
-                                    <th style="text-align: left; padding: 8px 12px; color: var(--text-secondary); font-weight: 500;">Domain</th>
-                                    <th style="text-align: left; padding: 8px 12px; color: var(--text-secondary); font-weight: 500;">Category</th>
-                                    <th style="text-align: left; padding: 8px 12px; color: var(--text-secondary); font-weight: 500;">Policy</th>
-                                    <th style="text-align: left; padding: 8px 12px; color: var(--text-secondary); font-weight: 500;">Action</th>
+                    <div id="liveLogsTable" class="log-table-wrap">
+                        <table class="log-table" aria-label="Live DNS query log entries">
+                            <thead>
+                                <tr>
+                                    <th scope="col" style="text-align: left;">Time</th>
+                                    <th scope="col" style="text-align: right;">Query Count</th>
+                                    <th scope="col" style="text-align: left;">Domain</th>
+                                    <th scope="col" style="text-align: left;">Category</th>
+                                    <th scope="col" style="text-align: left;">Policy</th>
+                                    <th scope="col" style="text-align: left;">Action</th>
                                 </tr>
                             </thead>
                             <tbody id="liveLogsBody">
-                                <!-- Logs will be appended here -->
                             </tbody>
                         </table>
-                        <div id="noLogsMessage" style="text-align: center; padding: 20px; color: var(--text-secondary);">
+                        <div id="noLogsMessage" class="no-logs-msg" role="status">
                             Waiting for DNS queries...
                         </div>
                     </div>
-                </div>
+                </section>
 
-                <div style="display: grid; grid-template-columns: repeat(2, 1fr); gap: 16px; margin-bottom: 16px;">
-                    <div class="card">
-                        <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 10px;">
-                            <h2 style="margin: 0;">🌍 DNS Queries by Geography</h2>
-                            <button onclick="showQueryInfo('geography')" class="info-btn" title="View GraphQL Query">i</button>
+                <div class="chart-grid-2">
+                    <section class="card" aria-label="DNS Queries by Geography">
+                        <div class="card-header">
+                            <h2>🌍 DNS Queries by Geography</h2>
+                            <button onclick="showQueryInfo('geography')" class="info-btn" aria-label="View geography query information">i</button>
                         </div>
                         <div class="chart-container" id="geographyChartContainer" style="height: 200px;">
-                            <canvas id="geographyChart"></canvas>
+                            <canvas id="geographyChart" aria-label="Geography distribution chart"></canvas>
                         </div>
-                    </div>
+                    </section>
 
-                    <div class="card">
-                        <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 10px;">
-                            <h2 style="margin: 0;">📊 DNS Queries by Category</h2>
-                            <button onclick="showQueryInfo('category')" class="info-btn" title="View GraphQL Query">i</button>
+                    <section class="card" aria-label="DNS Queries by Category">
+                        <div class="card-header">
+                            <h2>📊 DNS Queries by Category</h2>
+                            <button onclick="showQueryInfo('category')" class="info-btn" aria-label="View category query information">i</button>
                         </div>
                         <div class="chart-container" id="categoryChartContainer" style="height: 200px;">
-                            <canvas id="categoryFilteredChart"></canvas>
+                            <canvas id="categoryFilteredChart" aria-label="Category distribution chart"></canvas>
                         </div>
-                    </div>
+                    </section>
                 </div>
 
-                <div style="display: grid; grid-template-columns: repeat(2, 1fr); gap: 16px; margin-bottom: 16px;">
-                    <div class="card">
-                        <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 10px;">
-                            <h2 style="margin: 0;">⚡ DNS Action Breakdown</h2>
-                            <button onclick="showQueryInfo('action')" class="info-btn" title="View GraphQL Query">i</button>
+                <div class="chart-grid-2">
+                    <section class="card" aria-label="DNS Action Breakdown">
+                        <div class="card-header">
+                            <h2>⚡ DNS Action Breakdown</h2>
+                            <button onclick="showQueryInfo('action')" class="info-btn" aria-label="View action breakdown information">i</button>
                         </div>
                         <div class="chart-container" id="actionBreakdownChartContainer" style="height: 200px;">
-                            <canvas id="actionBreakdownChart"></canvas>
+                            <canvas id="actionBreakdownChart" aria-label="Action breakdown chart"></canvas>
                         </div>
-                    </div>
+                    </section>
 
-                    <div class="card">
-                        <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 10px;">
-                            <h2 style="margin: 0;">📱 Application Summary</h2>
-                            <button onclick="showQueryInfo('applications')" class="info-btn" title="View GraphQL Query">i</button>
+                    <section class="card" aria-label="Application Summary">
+                        <div class="card-header">
+                            <h2>📱 Application Summary</h2>
+                            <button onclick="showQueryInfo('applications')" class="info-btn" aria-label="View applications query information">i</button>
                         </div>
                         <div class="chart-container" id="applicationsChartContainer" style="height: 200px;">
-                            <canvas id="applicationsPieChart"></canvas>
+                            <canvas id="applicationsPieChart" aria-label="Application distribution chart"></canvas>
                         </div>
-                    </div>
+                    </section>
                 </div>
 
                 <!-- Category Analysis Section -->
-                <div style="background: linear-gradient(135deg, rgba(139, 92, 246, 0.08) 0%, rgba(139, 92, 246, 0.02) 100%); border: 1px solid rgba(139, 92, 246, 0.2); padding: 16px; border-radius: 12px; margin-bottom: 16px;">
-                    <div style="display: flex; align-items: center; gap: 10px; margin-bottom: 16px;">
-                        <div style="width: 36px; height: 36px; background: linear-gradient(135deg, rgb(139, 92, 246), rgb(109, 40, 217)); border-radius: 8px; display: flex; align-items: center; justify-content: center;">
+                <section class="section-group section-group-purple" aria-label="Category Analysis">
+                    <div class="section-group-header">
+                        <div class="section-group-icon section-group-icon-purple" aria-hidden="true">
                             <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="white" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 2H2v10l9.29 9.29c.94.94 2.48.94 3.42 0l6.58-6.58c.94-.94.94-2.48 0-3.42L12 2Z"/><path d="M7 7h.01"/></svg>
                         </div>
-                        <h2 style="margin: 0; font-family: 'Roboto Mono', monospace; color: var(--text-primary); font-size: 1.1rem; font-weight: 700;">Category Analysis</h2>
+                        <h2 class="section-group-title">Category Analysis</h2>
                     </div>
                     
-                    <div style="display: grid; grid-template-columns: repeat(2, 1fr); gap: 16px;">
+                    <div class="chart-grid-2">
                         <div class="card">
-                            <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 10px;">
-                                <h2 style="margin: 0;">Top 20 Allowed Categories</h2>
-                                <button onclick="showQueryInfo('allowed')" class="info-btn" title="View GraphQL Query">i</button>
+                            <div class="card-header">
+                                <h2>Top 20 Allowed Categories</h2>
+                                <button onclick="showQueryInfo('allowed')" class="info-btn" aria-label="View allowed categories query information">i</button>
                             </div>
                             <div class="chart-container" style="height: 450px;">
-                                <canvas id="allowedChart"></canvas>
+                                <canvas id="allowedChart" aria-label="Allowed categories chart"></canvas>
                             </div>
                         </div>
 
                         <div class="card">
-                            <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 10px;">
-                                <h2 style="margin: 0;">Top 20 Blocked Categories</h2>
-                                <button onclick="showQueryInfo('blocked')" class="info-btn" title="View GraphQL Query">i</button>
+                            <div class="card-header">
+                                <h2>Top 20 Blocked Categories</h2>
+                                <button onclick="showQueryInfo('blocked')" class="info-btn" aria-label="View blocked categories query information">i</button>
                             </div>
                             <div id="blockedChartContainer" class="chart-container" style="height: 450px;">
-                                <canvas id="blockedChart"></canvas>
+                                <canvas id="blockedChart" aria-label="Blocked categories chart"></canvas>
                             </div>
                         </div>
                     </div>
-                </div>
+                </section>
 
                 <!-- Domain Analysis Section -->
-                <div style="background: linear-gradient(135deg, rgba(59, 130, 246, 0.08) 0%, rgba(59, 130, 246, 0.02) 100%); border: 1px solid rgba(59, 130, 246, 0.2); padding: 16px; border-radius: 12px; margin-bottom: 16px;">
-                    <div style="display: flex; align-items: center; gap: 10px; margin-bottom: 16px;">
-                        <div style="width: 36px; height: 36px; background: linear-gradient(135deg, rgb(59, 130, 246), rgb(37, 99, 235)); border-radius: 8px; display: flex; align-items: center; justify-content: center;">
+                <section class="section-group section-group-blue" aria-label="Domain Analysis">
+                    <div class="section-group-header">
+                        <div class="section-group-icon section-group-icon-blue" aria-hidden="true">
                             <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="white" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="10"/><path d="M12 2a14.5 14.5 0 0 0 0 20 14.5 14.5 0 0 0 0-20"/><path d="M2 12h20"/></svg>
                         </div>
-                        <h2 style="margin: 0; font-family: 'Roboto Mono', monospace; color: var(--text-primary); font-size: 1.1rem; font-weight: 700;">Domain Analysis</h2>
+                        <h2 class="section-group-title">Domain Analysis</h2>
                     </div>
 
-                    <div style="display: grid; grid-template-columns: repeat(3, 1fr); gap: 16px;">
+                    <div class="chart-grid-3">
                         <div class="card">
-                            <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 10px;">
-                                <h2 style="margin: 0;">Top 20 Queried Domains</h2>
-                                <button onclick="showQueryInfo('queries')" class="info-btn" title="View GraphQL Query">i</button>
+                            <div class="card-header">
+                                <h2>Top 20 Queried Domains</h2>
+                                <button onclick="showQueryInfo('queries')" class="info-btn" aria-label="View queried domains information">i</button>
                             </div>
                             <div class="chart-container" style="height: 250px;">
-                                <canvas id="queriesChart"></canvas>
+                                <canvas id="queriesChart" aria-label="Top queried domains chart"></canvas>
                             </div>
                         </div>
 
                         <div class="card">
-                            <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 10px;">
-                                <h2 style="margin: 0;">Top 20 Blocked Domains</h2>
-                                <button onclick="showQueryInfo('blockedDomains')" class="info-btn" title="View GraphQL Query">i</button>
+                            <div class="card-header">
+                                <h2>Top 20 Blocked Domains</h2>
+                                <button onclick="showQueryInfo('blockedDomains')" class="info-btn" aria-label="View blocked domains information">i</button>
                             </div>
                             <div id="blockedDomainsChartContainer" class="chart-container" style="height: 250px;">
-                                <canvas id="blockedDomainsChart"></canvas>
+                                <canvas id="blockedDomainsChart" aria-label="Blocked domains chart"></canvas>
                             </div>
                         </div>
 
                         <div class="card">
-                            <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 10px;">
-                                <h2 style="margin: 0;">Top 20 Newly Observed Domains</h2>
-                                <button onclick="showQueryInfo('newlyObserved')" class="info-btn" title="View GraphQL Query">i</button>
+                            <div class="card-header">
+                                <h2>Top 20 Newly Observed Domains</h2>
+                                <button onclick="showQueryInfo('newlyObserved')" class="info-btn" aria-label="View newly observed domains information">i</button>
                             </div>
                             <div class="chart-container" style="height: 250px;">
-                                <canvas id="newlyObservedChart"></canvas>
+                                <canvas id="newlyObservedChart" aria-label="Newly observed domains chart"></canvas>
                             </div>
                         </div>
                     </div>
-                </div>
+                </section>
 
             </div>
         </div>
-    </div>
+    </main>
 
-    <div id="modal" class="modal">
+    <div id="modal" class="modal" role="dialog" aria-modal="true" aria-labelledby="modalTitle" style="display: none;">
         <div class="modal-content">
             <div class="modal-header">
                 <h2 id="modalTitle">Details</h2>
-                <span class="close" onclick="closeModal()">&times;</span>
+                <button class="close" onclick="closeModal()" aria-label="Close dialog">&times;</button>
             </div>
             <div id="modalContent">
-                <div class="loading">Loading...</div>
+                <div class="loading" role="status">Loading...</div>
             </div>
         </div>
     </div>
@@ -766,6 +1157,7 @@
             if (isLiveMode) {
                 // Enable live mode
                 liveBtn.classList.add('active');
+                liveBtn.setAttribute('aria-pressed', 'true');
                 liveBtnText.textContent = 'Stop';
                 liveStatus.style.display = 'block';
                 liveLogsContainer.style.display = 'block';
@@ -800,6 +1192,7 @@
             } else {
                 // Disable live mode
                 liveBtn.classList.remove('active');
+                liveBtn.setAttribute('aria-pressed', 'false');
                 liveBtnText.textContent = 'Live';
                 liveStatus.style.display = 'none';
                 liveLogsContainer.style.display = 'none';
@@ -814,8 +1207,10 @@
                 currentTimeRange = '7d';
                 document.querySelectorAll('.controls .btn').forEach(btn => {
                     btn.classList.remove('active');
+                    btn.removeAttribute('aria-pressed');
                     if (btn.textContent.includes('7 Days')) {
                         btn.classList.add('active');
+                        btn.setAttribute('aria-pressed', 'true');
                     }
                 });
                 loadDashboardData('7d');
@@ -851,8 +1246,10 @@
             
             document.querySelectorAll('.controls .btn').forEach(btn => {
                 btn.classList.remove('active');
+                btn.removeAttribute('aria-pressed');
             });
             event.target.classList.add('active');
+            event.target.setAttribute('aria-pressed', 'true');
             
             loadDashboardData(range);
         }
@@ -917,8 +1314,12 @@
                 renderApplicationsPieChart(applicationsData);
                 renderNewlyObservedChart(newlyObservedData);
                 renderBlockedDomainsChart(blockedDomainsData);
+                document.getElementById('errorBanner').style.display = 'none';
             }).catch(err => {
                 console.error('Error loading dashboard data:', err);
+                const banner = document.getElementById('errorBanner');
+                document.getElementById('errorMessage').textContent = 'Unable to load dashboard data. Please check your connection and try again.';
+                banner.style.display = 'flex';
             });
         }
 
@@ -938,6 +1339,24 @@
             }
         }
 
+        function formatDonutTotal(n) {
+            const s = n.toLocaleString();
+            if (s.length <= 9) return s;
+            if (n >= 1e9) return (n / 1e9).toFixed(1).replace(/\.0$/, '') + 'B';
+            if (n >= 1e6) return (n / 1e6).toFixed(1).replace(/\.0$/, '') + 'M';
+            return s;
+        }
+
+        function autoSizeDonutCenters() {
+            document.querySelectorAll('.donut-chart-center .total-count').forEach(el => {
+                const len = el.textContent.length;
+                if (len > 11) el.style.fontSize = '0.85rem';
+                else if (len > 9) el.style.fontSize = '1rem';
+                else if (len > 7) el.style.fontSize = '1.2rem';
+                else el.style.fontSize = '1.5rem';
+            });
+        }
+
         function updateMetrics(data) {
             const total = data.totalQueries || 0;
             const allowed = data.allowedQueries || 0;
@@ -955,9 +1374,9 @@
         const allClearHTML = `
             <div style="display: flex; flex-direction: column; align-items: center; justify-content: center; height: 100%; padding: 20px; text-align: center;">
                 <svg xmlns="http://www.w3.org/2000/svg" width="48" height="48" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="color: var(--accent-success); opacity: 0.6; margin-bottom: 12px;"><path d="M20 13c0 5-3.5 7.5-7.66 8.95a1 1 0 0 1-.67-.01C7.5 20.5 4 18 4 13V6a1 1 0 0 1 1-1c2 0 4.5-1.2 6.24-2.72a1.17 1.17 0 0 1 1.52 0C14.51 3.81 17 5 19 5a1 1 0 0 1 1 1z"></path></svg>
-                <div style="font-family: 'Roboto Mono', monospace; font-size: 1rem; font-weight: 600; color: var(--text-primary); margin-bottom: 4px;">All Clear!</div>
-                <div style="font-family: 'Roboto Mono', monospace; font-size: 0.8rem; color: rgb(95, 99, 104);">No blocked domains detected during this period</div>
-                <div style="font-family: 'Roboto Mono', monospace; font-size: 0.75rem; color: var(--accent-success); margin-top: 4px;">Your DNS security is working perfectly</div>
+                <div style="font-family: var(--font-mono); font-size: 1rem; font-weight: 600; color: var(--text-primary); margin-bottom: 4px;">All Clear!</div>
+                <div style="font-family: var(--font-mono); font-size: 0.8rem; color: var(--text-secondary);">No blocked domains detected during this period</div>
+                <div style="font-family: var(--font-mono); font-size: 0.75rem; color: var(--accent-success); margin-top: 4px;">Your DNS security is working perfectly</div>
             </div>
         `;
 
@@ -1074,14 +1493,14 @@
                     datasets: [{
                         label: 'Total Queries',
                         data: totalQueries,
-                        borderColor: 'rgb(37, 99, 235)',
-                        backgroundColor: 'rgba(37, 99, 235, 0.1)',
+                        borderColor: 'oklch(0.5772 0.2324 260)',
+                        backgroundColor: 'oklch(0.5772 0.2324 260 / 0.1)',
                         borderWidth: 2,
                         fill: true,
                         tension: 0.3,
                         pointRadius: 3,
                         pointHoverRadius: 6,
-                        pointBackgroundColor: 'rgb(37, 99, 235)',
+                        pointBackgroundColor: 'oklch(0.5772 0.2324 260)',
                         pointBorderColor: '#ffffff',
                         pointBorderWidth: 2
                     }]
@@ -1091,13 +1510,13 @@
                     maintainAspectRatio: false,
                     scales: {
                         x: { 
-                            grid: { color: 'rgba(95, 99, 104, 0.1)' },
-                            ticks: { font: { family: "'Roboto Mono', monospace", size: 10 }, color: 'rgb(95, 99, 104)' }
+                            grid: { color: 'oklch(14.5% 0 0 / 0.08)' },
+                            ticks: { font: { family: "Inter, sans-serif", size: 10 }, color: 'var(--text-secondary)' }
                         },
                         y: { 
                             beginAtZero: true,
-                            ticks: { font: { family: "'Roboto Mono', monospace", size: 10 }, color: 'rgb(95, 99, 104)' },
-                            grid: { color: 'rgba(95, 99, 104, 0.1)' }
+                            ticks: { font: { family: "Inter, sans-serif", size: 10 }, color: 'var(--text-secondary)' },
+                            grid: { color: 'oklch(14.5% 0 0 / 0.08)' }
                         }
                     },
                     plugins: {
@@ -1105,13 +1524,13 @@
                         tooltip: { 
                             backgroundColor: '#ffffff',
                             titleColor: '#111827',
-                            bodyColor: 'rgb(95, 99, 104)',
+                            bodyColor: 'var(--text-secondary)',
                             borderColor: '#e5e7eb',
                             borderWidth: 1,
                             padding: 12,
                             cornerRadius: 8,
-                            titleFont: { family: "'Roboto Mono', monospace", weight: '600' },
-                            bodyFont: { family: "'Roboto Mono', monospace" }
+                            titleFont: { family: "Inter, sans-serif", weight: '600' },
+                            bodyFont: { family: "Inter, sans-serif" }
                         }
                     }
                 }
@@ -1155,11 +1574,11 @@
                     scales: {
                         x: { 
                             beginAtZero: true,
-                            ticks: { font: { family: "'Roboto Mono', monospace", size: 10 }, color: 'rgb(95, 99, 104)' },
-                            grid: { color: 'rgba(95, 99, 104, 0.1)' }
+                            ticks: { font: { family: "Inter, sans-serif", size: 10 }, color: 'var(--text-secondary)' },
+                            grid: { color: 'oklch(14.5% 0 0 / 0.08)' }
                         },
                         y: {
-                            ticks: { font: { family: "'Roboto Mono', monospace", size: 10 }, color: 'rgb(95, 99, 104)' },
+                            ticks: { font: { family: "Inter, sans-serif", size: 10 }, color: 'var(--text-secondary)' },
                             grid: { display: false }
                         }
                     },
@@ -1168,8 +1587,8 @@
                         tooltip: { 
                             mode: 'index', 
                             intersect: false,
-                            titleFont: { family: "'Roboto Mono', monospace" },
-                            bodyFont: { family: "'Roboto Mono', monospace" }
+                            titleFont: { family: "Inter, sans-serif" },
+                            bodyFont: { family: "Inter, sans-serif" }
                         }
                     }
                 }
@@ -1211,11 +1630,11 @@
                     scales: {
                         x: { 
                             beginAtZero: true,
-                            ticks: { font: { family: "'Roboto Mono', monospace", size: 10 }, color: 'rgb(95, 99, 104)' },
-                            grid: { color: 'rgba(95, 99, 104, 0.1)' }
+                            ticks: { font: { family: "Inter, sans-serif", size: 10 }, color: 'var(--text-secondary)' },
+                            grid: { color: 'oklch(14.5% 0 0 / 0.08)' }
                         },
                         y: {
-                            ticks: { font: { family: "'Roboto Mono', monospace", size: 10 }, color: 'rgb(95, 99, 104)' },
+                            ticks: { font: { family: "Inter, sans-serif", size: 10 }, color: 'var(--text-secondary)' },
                             grid: { display: false }
                         }
                     },
@@ -1224,8 +1643,8 @@
                         tooltip: { 
                             mode: 'index', 
                             intersect: false,
-                            titleFont: { family: "'Roboto Mono', monospace" },
-                            bodyFont: { family: "'Roboto Mono', monospace" }
+                            titleFont: { family: "Inter, sans-serif" },
+                            bodyFont: { family: "Inter, sans-serif" }
                         }
                     }
                 }
@@ -1270,11 +1689,11 @@
                     scales: {
                         x: { 
                             beginAtZero: true,
-                            ticks: { font: { family: "'Roboto Mono', monospace", size: 10 }, color: 'rgb(95, 99, 104)' },
-                            grid: { color: 'rgba(95, 99, 104, 0.1)' }
+                            ticks: { font: { family: "Inter, sans-serif", size: 10 }, color: 'var(--text-secondary)' },
+                            grid: { color: 'oklch(14.5% 0 0 / 0.08)' }
                         },
                         y: {
-                            ticks: { font: { family: "'Roboto Mono', monospace", size: 10 }, color: 'rgb(95, 99, 104)' },
+                            ticks: { font: { family: "Inter, sans-serif", size: 10 }, color: 'var(--text-secondary)' },
                             grid: { display: false }
                         }
                     },
@@ -1283,8 +1702,8 @@
                         tooltip: { 
                             mode: 'index', 
                             intersect: false,
-                            titleFont: { family: "'Roboto Mono', monospace" },
-                            bodyFont: { family: "'Roboto Mono', monospace" },
+                            titleFont: { family: "Inter, sans-serif" },
+                            bodyFont: { family: "Inter, sans-serif" },
                             callbacks: {
                                 afterBody: function(context) {
                                     const index = context[0].dataIndex;
@@ -1315,8 +1734,8 @@
                 container.innerHTML = `
                     <div style="display: flex; flex-direction: column; align-items: center; justify-content: center; height: 100%; padding: 20px; text-align: center;">
                         <svg xmlns="http://www.w3.org/2000/svg" width="48" height="48" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="color: var(--accent-success); opacity: 0.6; margin-bottom: 12px;"><path d="M20 13c0 5-3.5 7.5-7.66 8.95a1 1 0 0 1-.67-.01C7.5 20.5 4 18 4 13V6a1 1 0 0 1 1-1c2 0 4.5-1.2 6.24-2.72a1.17 1.17 0 0 1 1.52 0C14.51 3.81 17 5 19 5a1 1 0 0 1 1 1z"></path></svg>
-                        <div style="font-family: 'Roboto Mono', monospace; font-size: 1rem; font-weight: 600; color: var(--text-primary); margin-bottom: 4px;">No New Domains</div>
-                        <div style="font-family: 'Roboto Mono', monospace; font-size: 0.8rem; color: rgb(95, 99, 104);">No newly observed domains in this time period</div>
+                        <div style="font-family: var(--font-mono); font-size: 1rem; font-weight: 600; color: var(--text-primary); margin-bottom: 4px;">No New Domains</div>
+                        <div style="font-family: var(--font-mono); font-size: 0.8rem; color: var(--text-secondary);">No newly observed domains in this time period</div>
                     </div>
                 `;
                 return;
@@ -1345,11 +1764,11 @@
                     scales: {
                         x: { 
                             beginAtZero: true,
-                            ticks: { font: { family: "'Roboto Mono', monospace", size: 10 }, color: 'rgb(95, 99, 104)' },
-                            grid: { color: 'rgba(95, 99, 104, 0.1)' }
+                            ticks: { font: { family: "Inter, sans-serif", size: 10 }, color: 'var(--text-secondary)' },
+                            grid: { color: 'oklch(14.5% 0 0 / 0.08)' }
                         },
                         y: {
-                            ticks: { font: { family: "'Roboto Mono', monospace", size: 10 }, color: 'rgb(95, 99, 104)' },
+                            ticks: { font: { family: "Inter, sans-serif", size: 10 }, color: 'var(--text-secondary)' },
                             grid: { display: false }
                         }
                     },
@@ -1358,8 +1777,8 @@
                         tooltip: { 
                             mode: 'index', 
                             intersect: false,
-                            titleFont: { family: "'Roboto Mono', monospace" },
-                            bodyFont: { family: "'Roboto Mono', monospace" },
+                            titleFont: { family: "Inter, sans-serif" },
+                            bodyFont: { family: "Inter, sans-serif" },
                             callbacks: {
                                 afterBody: function(context) {
                                     const index = context[0].dataIndex;
@@ -1388,8 +1807,8 @@
                 container.innerHTML = `
                     <div style="display: flex; flex-direction: column; align-items: center; justify-content: center; height: 100%; padding: 20px; text-align: center;">
                         <svg xmlns="http://www.w3.org/2000/svg" width="48" height="48" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="color: var(--accent-success); opacity: 0.6; margin-bottom: 12px;"><path d="M20 13c0 5-3.5 7.5-7.66 8.95a1 1 0 0 1-.67-.01C7.5 20.5 4 18 4 13V6a1 1 0 0 1 1-1c2 0 4.5-1.2 6.24-2.72a1.17 1.17 0 0 1 1.52 0C14.51 3.81 17 5 19 5a1 1 0 0 1 1 1z"></path></svg>
-                        <div style="font-family: 'Roboto Mono', monospace; font-size: 1rem; font-weight: 600; color: var(--text-primary); margin-bottom: 4px;">All Clear!</div>
-                        <div style="font-family: 'Roboto Mono', monospace; font-size: 0.8rem; color: rgb(95, 99, 104);">No blocked domains in this time period</div>
+                        <div style="font-family: var(--font-mono); font-size: 1rem; font-weight: 600; color: var(--text-primary); margin-bottom: 4px;">All Clear!</div>
+                        <div style="font-family: var(--font-mono); font-size: 0.8rem; color: var(--text-secondary);">No blocked domains in this time period</div>
                     </div>
                 `;
                 return;
@@ -1418,11 +1837,11 @@
                     scales: {
                         x: { 
                             beginAtZero: true,
-                            ticks: { font: { family: "'Roboto Mono', monospace", size: 10 }, color: 'rgb(95, 99, 104)' },
-                            grid: { color: 'rgba(95, 99, 104, 0.1)' }
+                            ticks: { font: { family: "Inter, sans-serif", size: 10 }, color: 'var(--text-secondary)' },
+                            grid: { color: 'oklch(14.5% 0 0 / 0.08)' }
                         },
                         y: {
-                            ticks: { font: { family: "'Roboto Mono', monospace", size: 10 }, color: 'rgb(95, 99, 104)' },
+                            ticks: { font: { family: "Inter, sans-serif", size: 10 }, color: 'var(--text-secondary)' },
                             grid: { display: false }
                         }
                     },
@@ -1431,8 +1850,8 @@
                         tooltip: { 
                             mode: 'index', 
                             intersect: false,
-                            titleFont: { family: "'Roboto Mono', monospace" },
-                            bodyFont: { family: "'Roboto Mono', monospace" },
+                            titleFont: { family: "Inter, sans-serif" },
+                            bodyFont: { family: "Inter, sans-serif" },
                             callbacks: {
                                 label: function(context) {
                                     return 'Blocked: ' + context.raw.toLocaleString() + ' queries';
@@ -1453,13 +1872,12 @@
         }
 
         async function showQueryDetails(date, type, timeRange, resolverDecisions) {
-            const modal = document.getElementById('modal');
             const modalTitle = document.getElementById('modalTitle');
             const modalContent = document.getElementById('modalContent');
             
-            modal.style.display = 'block';
+            openModal();
             modalTitle.textContent = `${type.charAt(0).toUpperCase() + type.slice(1)} Queries - ${date}`;
-            modalContent.innerHTML = '<div class="loading">Loading details...</div>';
+            modalContent.innerHTML = '<div class="loading" role="status">Loading details...</div>';
             
             try {
                 const decisionsParam = resolverDecisions ? `&decisions=${resolverDecisions.join(',')}` : '';
@@ -1467,7 +1885,7 @@
                 const data = await response.json();
                 
                 if (data.error) {
-                    modalContent.innerHTML = `<div style="color: var(--accent-error); text-align: center; padding: 20px;">${data.error}</div>`;
+                    modalContent.innerHTML = `<div style="color: var(--accent-error); text-align: center; padding: 20px;">Unable to load query details. Please try again.</div>`;
                     return;
                 }
                 
@@ -1477,7 +1895,7 @@
                 }
                 
                 let html = `
-                    <table style="width: 100%; border-collapse: collapse; font-family: 'Roboto Mono', monospace; font-size: 0.8rem;">
+                    <table style="width: 100%; border-collapse: collapse; font-family: var(--font-mono); font-size: 0.8rem;">
                         <thead>
                             <tr style="background: var(--bg-tertiary); border-bottom: 2px solid var(--border-primary);">
                                 <th style="padding: 10px; text-align: left; font-weight: 600;">Domain</th>
@@ -1501,18 +1919,17 @@
                 html += '</tbody></table>';
                 modalContent.innerHTML = html;
             } catch (error) {
-                modalContent.innerHTML = `<div style="color: var(--accent-error); text-align: center; padding: 20px;">Error loading data: ${error.message}</div>`;
+                modalContent.innerHTML = '<div style="color: var(--accent-error); text-align: center; padding: 20px;">Unable to load data. Please try again later.</div>';
             }
         }
 
         async function showQueryDetails(date, type, timeRange, resolverDecisions) {
-            const modal = document.getElementById('modal');
             const modalTitle = document.getElementById('modalTitle');
             const modalContent = document.getElementById('modalContent');
             
-            modal.style.display = 'block';
+            openModal();
             modalTitle.textContent = `${type.charAt(0).toUpperCase() + type.slice(1)} Queries - ${date}`;
-            modalContent.innerHTML = '<div class="loading">Loading details...</div>';
+            modalContent.innerHTML = '<div class="loading" role="status">Loading details...</div>';
             
             try {
                 const decisionsParam = resolverDecisions ? `&decisions=${resolverDecisions.join(',')}` : '';
@@ -1520,7 +1937,7 @@
                 const data = await response.json();
                 
                 if (data.error) {
-                    modalContent.innerHTML = `<div style="color: var(--accent-error); text-align: center; padding: 20px;">${data.error}</div>`;
+                    modalContent.innerHTML = `<div style="color: var(--accent-error); text-align: center; padding: 20px;">Unable to load query details. Please try again.</div>`;
                     return;
                 }
                 
@@ -1601,8 +2018,8 @@
                     <div class="donut-chart-container">
                         <canvas id="geographyChart"></canvas>
                         <div class="donut-chart-center">
-                            <div class="total-count">${total.toLocaleString()}</div>
-                            <div class="total-label">Total</div>
+                            <div class="total-count">${formatDonutTotal(total)}</div>
+                            <div class="total-label">TOTAL</div>
                         </div>
                     </div>
                     <div class="chart-legend" id="geographyLegend"></div>
@@ -1636,13 +2053,13 @@
                         tooltip: { 
                             backgroundColor: '#ffffff',
                             titleColor: '#111827',
-                            bodyColor: 'rgb(95, 99, 104)',
+                            bodyColor: 'var(--text-secondary)',
                             borderColor: '#e5e7eb',
                             borderWidth: 1,
                             padding: 12,
                             cornerRadius: 8,
-                            titleFont: { family: "'Roboto Mono', monospace", weight: '600' },
-                            bodyFont: { family: "'Roboto Mono', monospace" },
+                            titleFont: { family: "Inter, sans-serif", weight: '600' },
+                            bodyFont: { family: "Inter, sans-serif" },
                             callbacks: {
                                 label: function(context) {
                                     const label = context.label || '';
@@ -1677,14 +2094,15 @@
                 entry.onclick = () => showGeographyDetails(item.country);
                 legendContainer.appendChild(entry);
             });
+
+            autoSizeDonutCenters();
         }
 
         async function showGeographyDetails(country) {
-            const modal = document.getElementById('modal');
             const modalTitle = document.getElementById('modalTitle');
             const modalContent = document.getElementById('modalContent');
             
-            modal.style.display = 'block';
+            openModal();
             modalTitle.textContent = `DNS Queries from ${country}`;
             modalContent.innerHTML = '<div class="loading">Loading details...</div>';
             
@@ -1693,7 +2111,7 @@
                 const data = await response.json();
                 
                 if (data.error) {
-                    modalContent.innerHTML = `<div style="color: var(--accent-error); text-align: center; padding: 20px;">${data.error}</div>`;
+                    modalContent.innerHTML = '<div style="color: var(--accent-error); text-align: center; padding: 20px;">Something went wrong. Please try again later.</div>';
                     return;
                 }
                 
@@ -1776,8 +2194,8 @@
                     <div class="donut-chart-container">
                         <canvas id="categoryFilteredChart"></canvas>
                         <div class="donut-chart-center">
-                            <div class="total-count">${total.toLocaleString()}</div>
-                            <div class="total-label">Total</div>
+                            <div class="total-count">${formatDonutTotal(total)}</div>
+                            <div class="total-label">TOTAL</div>
                         </div>
                     </div>
                     <div class="chart-legend" id="categoryLegend"></div>
@@ -1811,13 +2229,13 @@
                         tooltip: { 
                             backgroundColor: '#ffffff',
                             titleColor: '#111827',
-                            bodyColor: 'rgb(95, 99, 104)',
+                            bodyColor: 'var(--text-secondary)',
                             borderColor: '#e5e7eb',
                             borderWidth: 1,
                             padding: 12,
                             cornerRadius: 8,
-                            titleFont: { family: "'Roboto Mono', monospace", weight: '600' },
-                            bodyFont: { family: "'Roboto Mono', monospace" },
+                            titleFont: { family: "Inter, sans-serif", weight: '600' },
+                            bodyFont: { family: "Inter, sans-serif" },
                             callbacks: {
                                 label: function(context) {
                                     const label = context.label || '';
@@ -1844,6 +2262,8 @@
                 `;
                 legendContainer.appendChild(entry);
             });
+
+            autoSizeDonutCenters();
         }
 
         function renderActionBreakdownChart(trendData) {
@@ -1888,7 +2308,7 @@
 
             const donutColors = [
                 'rgb(73, 146, 88)', 'rgb(255, 108, 110)', 'rgb(255, 166, 0)', 
-                'rgb(170, 110, 198)', 'rgb(95, 99, 104)'
+                'rgb(170, 110, 198)', 'var(--text-secondary)'
             ];
 
             container.innerHTML = `
@@ -1896,8 +2316,8 @@
                     <div class="donut-chart-container">
                         <canvas id="actionBreakdownChart"></canvas>
                         <div class="donut-chart-center">
-                            <div class="total-count">${total.toLocaleString()}</div>
-                            <div class="total-label">Total</div>
+                            <div class="total-count">${formatDonutTotal(total)}</div>
+                            <div class="total-label">TOTAL</div>
                         </div>
                     </div>
                     <div class="chart-legend" id="actionLegend"></div>
@@ -1931,13 +2351,13 @@
                         tooltip: { 
                             backgroundColor: '#ffffff',
                             titleColor: '#111827',
-                            bodyColor: 'rgb(95, 99, 104)',
+                            bodyColor: 'var(--text-secondary)',
                             borderColor: '#e5e7eb',
                             borderWidth: 1,
                             padding: 12,
                             cornerRadius: 8,
-                            titleFont: { family: "'Roboto Mono', monospace", weight: '600' },
-                            bodyFont: { family: "'Roboto Mono', monospace" },
+                            titleFont: { family: "Inter, sans-serif", weight: '600' },
+                            bodyFont: { family: "Inter, sans-serif" },
                             callbacks: {
                                 label: function(context) {
                                     const label = context.label || '';
@@ -1971,6 +2391,8 @@
                 entry.onclick = () => showActionDetails(item.action);
                 legendContainer.appendChild(entry);
             });
+
+            autoSizeDonutCenters();
         }
 
         function renderApplicationsPieChart(data) {
@@ -1999,8 +2421,8 @@
                     <div class="donut-chart-container">
                         <canvas id="applicationsPieChart"></canvas>
                         <div class="donut-chart-center">
-                            <div class="total-count">${total.toLocaleString()}</div>
-                            <div class="total-label">Total</div>
+                            <div class="total-count">${formatDonutTotal(total)}</div>
+                            <div class="total-label">TOTAL</div>
                         </div>
                     </div>
                     <div class="chart-legend" id="applicationsLegend"></div>
@@ -2034,13 +2456,13 @@
                         tooltip: { 
                             backgroundColor: '#ffffff',
                             titleColor: '#111827',
-                            bodyColor: 'rgb(95, 99, 104)',
+                            bodyColor: 'var(--text-secondary)',
                             borderColor: '#e5e7eb',
                             borderWidth: 1,
                             padding: 12,
                             cornerRadius: 8,
-                            titleFont: { family: "'Roboto Mono', monospace", weight: '600' },
-                            bodyFont: { family: "'Roboto Mono', monospace" },
+                            titleFont: { family: "Inter, sans-serif", weight: '600' },
+                            bodyFont: { family: "Inter, sans-serif" },
                             callbacks: {
                                 label: function(context) {
                                     const label = context.label || '';
@@ -2067,23 +2489,24 @@
                 `;
                 legendContainer.appendChild(entry);
             });
+
+            autoSizeDonutCenters();
         }
 
         async function showCategoryQueryModal(categoryName, categoryId) {
-            const modal = document.getElementById('modal');
             const modalTitle = document.getElementById('modalTitle');
             const modalContent = document.getElementById('modalContent');
             
-            modal.style.display = 'block';
+            openModal();
             modalTitle.textContent = `Queries in ${categoryName}`;
-            modalContent.innerHTML = '<div class="loading">Loading queries...</div>';
+            modalContent.innerHTML = '<div class="loading" role="status">Loading queries...</div>';
             
             try {
                 const response = await fetch(`/dns/api/category-queries?categoryId=${categoryId}&timeRange=${currentTimeRange}`);
                 const data = await response.json();
                 
                 if (data.error) {
-                    modalContent.innerHTML = `<div style="color: var(--accent-error); text-align: center; padding: 20px;">${data.error}</div>`;
+                    modalContent.innerHTML = '<div style="color: var(--accent-error); text-align: center; padding: 20px;">Something went wrong. Please try again later.</div>';
                     return;
                 }
                 
@@ -2130,13 +2553,12 @@
         }
 
         async function showActionDetails(actionType) {
-            const modal = document.getElementById('modal');
             const modalTitle = document.getElementById('modalTitle');
             const modalContent = document.getElementById('modalContent');
             
-            modal.style.display = 'block';
+            openModal();
             modalTitle.textContent = `${actionType} Queries`;
-            modalContent.innerHTML = '<div class="loading">Loading details...</div>';
+            modalContent.innerHTML = '<div class="loading" role="status">Loading details...</div>';
             
             // Map action type to resolver decisions
             let resolverDecisions = [];
@@ -2157,7 +2579,7 @@
                 const data = await response.json();
                 
                 if (data.error) {
-                    modalContent.innerHTML = `<div style="color: var(--accent-error); text-align: center; padding: 20px;">${data.error}</div>`;
+                    modalContent.innerHTML = '<div style="color: var(--accent-error); text-align: center; padding: 20px;">Something went wrong. Please try again later.</div>';
                     return;
                 }
                 
@@ -2179,7 +2601,7 @@
                     'Blocked': 'var(--accent-error)',
                     'Safe Search': 'var(--accent-warning)',
                     'Override Applied': 'rgb(170, 110, 198)',
-                    'Unknown': 'rgb(95, 99, 104)'
+                    'Unknown': 'var(--text-secondary)'
                 };
                 
                 let html = `
@@ -2193,16 +2615,16 @@
                         <div style="background: var(--bg-secondary); border-radius: 8px; padding: 12px; border: 1px solid var(--border-primary);">
                             <div style="display: flex; align-items: center; gap: 8px; margin-bottom: 8px;">
                                 <span style="font-size: 1.2rem;">${icon}</span>
-                                <span style="font-family: 'Roboto Mono', monospace; font-size: 0.85rem; font-weight: 600; color: ${color};">${actionType}</span>
+                                <span style="font-family: var(--font-mono); font-size: 0.85rem; font-weight: 600; color: ${color};">${actionType}</span>
                             </div>
-                            <div style="font-family: 'Roboto Mono', monospace; font-size: 0.8rem; color: var(--text-primary); word-break: break-all; margin-bottom: 6px;">
+                            <div style="font-family: var(--font-mono); font-size: 0.8rem; color: var(--text-primary); word-break: break-all; margin-bottom: 6px;">
                                 ${query.queryName || 'Unknown Domain'}
                             </div>
                             <div style="display: flex; justify-content: space-between; align-items: center;">
-                                <span style="font-family: 'Roboto Mono', monospace; font-size: 0.7rem; color: var(--text-tertiary);">
+                                <span style="font-family: var(--font-mono); font-size: 0.7rem; color: var(--text-tertiary);">
                                     ${query.policyName || 'Default Policy'}
                                 </span>
-                                <span style="font-family: 'Roboto Mono', monospace; font-size: 0.7rem; color: var(--text-secondary); background: var(--bg-tertiary); padding: 2px 6px; border-radius: 4px;">
+                                <span style="font-family: var(--font-mono); font-size: 0.7rem; color: var(--text-secondary); background: var(--bg-tertiary); padding: 2px 6px; border-radius: 4px;">
                                     ${query.count.toLocaleString()}
                                 </span>
                             </div>
@@ -2213,7 +2635,7 @@
                 html += '</div>';
                 
                 if (data.queries.length > 50) {
-                    html += `<div style="text-align: center; margin-top: 16px; color: var(--text-tertiary); font-family: 'Roboto Mono', monospace; font-size: 0.8rem;">Showing 50 of ${data.queries.length} queries</div>`;
+                    html += `<div style="text-align: center; margin-top: 16px; color: var(--text-tertiary); font-family: var(--font-mono); font-size: 0.8rem;">Showing 50 of ${data.queries.length} queries</div>`;
                 }
                 
                 modalContent.innerHTML = html;
@@ -2240,17 +2662,16 @@
         }
 
         function showQueryInfo(chartType) {
-            const modal = document.getElementById('modal');
             const modalTitle = document.getElementById('modalTitle');
             const modalContent = document.getElementById('modalContent');
             
-            modal.style.display = 'block';
+            openModal();
             
             // Special handling for timeline info
             if (chartType === 'timeline') {
                 modalTitle.textContent = 'How to Read the DNS Query Timeline';
                 modalContent.innerHTML = `
-                    <div style="font-family: 'Roboto Mono', monospace;">
+                    <div style="font-family: var(--font-mono);">
                         <h3 style="color: var(--text-primary); margin-bottom: 12px;">📈 Understanding the Chart</h3>
                         <p style="color: var(--text-secondary); margin-bottom: 16px; line-height: 1.6;">
                             The DNS Query Timeline shows the total number of DNS queries processed over time. 
@@ -2284,7 +2705,7 @@
             if (chartType === 'liveLogs') {
                 modalTitle.textContent = 'About Live DNS Logs';
                 modalContent.innerHTML = `
-                    <div style="font-family: 'Roboto Mono', monospace;">
+                    <div style="font-family: var(--font-mono);">
                         <h3 style="color: var(--text-primary); margin-bottom: 12px;">🔴 Understanding Live DNS Logs</h3>
                         <p style="color: var(--text-secondary); margin-bottom: 16px; line-height: 1.6;">
                             Live DNS Logs show recent DNS query activity from the last 5 minutes. 
@@ -2421,9 +2842,55 @@
                 '</div>';
         }
 
+        let modalTriggerEl = null;
+
+        function openModal() {
+            const modal = document.getElementById('modal');
+            modalTriggerEl = document.activeElement;
+            modal.style.display = 'block';
+            // Focus the close button inside the modal
+            const closeBtn = modal.querySelector('.close');
+            if (closeBtn) closeBtn.focus();
+        }
+
         function closeModal() {
             document.getElementById('modal').style.display = 'none';
+            // Return focus to the element that opened the modal
+            if (modalTriggerEl && modalTriggerEl.focus) {
+                modalTriggerEl.focus();
+                modalTriggerEl = null;
+            }
         }
+
+        // Close modal on Escape key
+        document.addEventListener('keydown', function(e) {
+            if (e.key === 'Escape') {
+                const modal = document.getElementById('modal');
+                if (modal.style.display === 'block') {
+                    closeModal();
+                }
+            }
+            // Focus trap inside modal
+            if (e.key === 'Tab') {
+                const modal = document.getElementById('modal');
+                if (modal.style.display !== 'block') return;
+                const focusable = modal.querySelectorAll('button, [href], input, select, textarea, [tabindex]:not([tabindex="-1"])');
+                if (focusable.length === 0) return;
+                const first = focusable[0];
+                const last = focusable[focusable.length - 1];
+                if (e.shiftKey) {
+                    if (document.activeElement === first) {
+                        e.preventDefault();
+                        last.focus();
+                    }
+                } else {
+                    if (document.activeElement === last) {
+                        e.preventDefault();
+                        first.focus();
+                    }
+                }
+            }
+        });
 
         window.onclick = function(event) {
             const modal = document.getElementById('modal');
