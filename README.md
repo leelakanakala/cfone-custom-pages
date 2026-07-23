@@ -32,6 +32,8 @@ Real-time DNS filtering analytics powered by Cloudflare's GraphQL API. Monitor, 
 - **Application Analysis** — traffic by application type
 - **PDF Export** — one-click report generation via html2canvas + jsPDF
 
+![DNS Analytics Dashboard](src/img/dns-dashboard.png)
+
 ### Gateway Block Page (`/cf-gateway/`)
 
 Custom block page displayed by Cloudflare Secure Web Gateway when a DNS or HTTP policy blocks a request. Parses Gateway query parameters to show the blocked URL, matched categories, and policy details. Supports light/dark themes.
